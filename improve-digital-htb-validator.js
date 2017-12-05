@@ -76,7 +76,7 @@ var partnerValidator = function (configs) {
                             then: "publisherId"
                         },
                         $mustIncludeOneOnly : {
-                            perams: ["placementId", "placementKey"]
+                            params: ["placementId", "placementKey"]
                         },
                         properties: {
                             currency: {
