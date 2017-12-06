@@ -19,6 +19,17 @@
 
 var Inspector = require('../../../libs/external/schema-inspector.js');
 
+var custom = {
+    impliesPresence: function (schema, candidate) {
+        var implication = schema.$impliesPresence;
+        var impliedIf = implication.if;
+        var impliedThen = implication.then;
+        if (candidate[impliedIf] && typeof candidate[impliedThen] === 'undefined') {
+            this.report('if ' + impliedIf + 'exists then ' + impliedThen + ' must also exist');
+        }
+    }
+};
+Inspector.Validation.extend(custom);
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +54,10 @@ var partnerValidator = function (configs) {
                     '*': {
                         type: 'object',
                         someKeys: ['placementId', 'placementKey'],
+                        $impliesPresence : {
+                            if: "placementKey",
+                            then: "publisherId"
+                        },
                         properties: {
                             placementId: {
                                 type: 'number',
@@ -59,6 +74,11 @@ var partnerValidator = function (configs) {
                                         type: 'number'
                                     }
                                 }
+                            },
+                            publisherId: {
+                                type: 'number',
+                                minLength: 1,
+                                optional: true
                             },
                             placementKey: {
                                 type: 'string',
