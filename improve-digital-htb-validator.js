@@ -19,6 +19,7 @@
 
 var Inspector = require('../../../libs/external/schema-inspector.js');
 
+
 var custom = {
     impliesPresence: function (schema, candidate) {
         var implication = schema.$impliesPresence;
@@ -59,9 +60,14 @@ var partnerValidator = function (configs) {
                             then: "publisherId"
                         },
                         properties: {
+                            currency: {
+                                type: 'string',
+                                optional: true,
+                                pattern: /^USD|EUR|GBP|AUD|DKK|SEK|CZK|CHF|NOK$/
+                            },
                             placementId: {
                                 type: 'number',
-                                optional: true,
+                                optional: true
                             },
                             size:{
                                 type: 'object',

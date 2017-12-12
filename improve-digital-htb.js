@@ -15,7 +15,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Dependencies ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
 var BidTransformer = require('bid-transformer.js');
 var Browser = require('browser.js');
 var Classify = require('classify.js');
@@ -25,15 +24,16 @@ var Size = require('size.js');
 var SpaceCamp = require('space-camp.js');
 var System = require('system.js');
 var Utilities = require('utilities.js');
-var EventsService;
-var RenderService;
-
-//? if (DEBUG) {
+var Whoopsie = require('whoopsie.js');
 var ConfigValidators = require('config-validators.js');
 var PartnerSpecificValidator = require('improve-digital-htb-validator.js');
 var Scribe = require('scribe.js');
-var Whoopsie = require('whoopsie.js');
-//? }
+
+
+var improvedigitalclient = require('./improvedigitaladserverjsclient.js');
+
+var EventsService;
+var RenderService;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
@@ -73,6 +73,20 @@ function ImproveDigitalHtb(configs) {
      */
     var __bidTransformers;
 
+    /**
+     * Instance of Improve Digital Ad Server JS Client
+     *
+     * @private {object}
+     */
+    var __adServerClient = new improvedigitalclient.ImproveDigitalAdServerJSClient();
+
+    /**
+     * Version of Improve Digital Index Exchange Adapter
+     *
+     * @private {object}
+     */
+    var __version = "0.0.1";
+
     /* =====================================
      * Functions
      * ---------------------------------- */
@@ -89,7 +103,6 @@ function ImproveDigitalHtb(configs) {
      * @return {object}
      */
     function __generateRequestObj(returnParcels) {
-
         /* =============================================================================
          * STEP 2  | Generate Request URL
          * -----------------------------------------------------------------------------
@@ -151,19 +164,43 @@ function ImproveDigitalHtb(configs) {
         var queryObj = {};
         var callbackId = System.generateUniqueId();
 
-        /* Change this to your bidder endpoint.*/
-        var baseUrl = Browser.getProtocol() + '//someAdapterEndpoint.com/bid';
+        var requestObject = {};
 
-        /* ---------------- Craft bid request using the above returnParcels --------- */
+        if(returnParcels && returnParcels.length) {
+            var requestParameters = {
+                httpRequestType: __adServerClient.CONSTANTS.HTTP_REQUEST_TYPE.GET,
+                returnObjType: __adServerClient.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT,
+                libVersion: __version,
+                requestId: callbackId,
+                callback: SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
+            };
+            requestParameters.singleRequestMode = returnParcels.length > 1 ? true : false;
 
+            var protocol = Browser.getProtocol();
+            requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
+            var requestObject = [];
+            for (var parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
+                var parcel = returnParcels[parcelCounter];
+                if (parcel) {
+                    // The client needs an adUnitId.  The htSlot Id is guaranteed to be unique for the page
+                    parcel.xSlotRef.adUnitId = parcel.htSlot.getId();
+                    parcel.xSlotRef.id = parcel.requestId;
+                    requestObject.push(parcel.xSlotRef);
+                }
+            }
+            var request = __adServerClient.createRequest(requestObject, requestParameters);
+            for (parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
+                var parcel = returnParcels[parcelCounter];
+                // Delete the adUnitId
+                parcel.xSlotRef.adUnitId = undefined;
+            }
+            if (request && request.requests && request.requests[0] && request.requests[0].url) {
+                queryObj.url = request.requests[0].url;
+                queryObj.callbackId = callbackId;
+            }
+        }
 
-        /* -------------------------------------------------------------------------- */
-
-        return {
-            url: baseUrl,
-            data: queryObj,
-            callbackId: callbackId
-        };
+        return queryObj;
     }
 
     /* =============================================================================
@@ -179,8 +216,9 @@ function ImproveDigitalHtb(configs) {
      */
     function adResponseCallback(adResponse) {
         /* get callbackId from adResponse here */
-        var callbackId = 0;
-        __baseClass._adResponseStore[callbackId] = adResponse;
+        if (adResponse.id) {
+            __baseClass._adResponseStore[id] = adResponse;
+        }
     }
     /* -------------------------------------------------------------------------- */
 
@@ -237,9 +275,9 @@ function ImproveDigitalHtb(configs) {
          *
          */
 
-         /* ---------- Process adResponse and extract the bids into the bids array ------------*/
+        /* ---------- Process adResponse and extract the bids into the bids array ------------*/
 
-        var bids = adResponse;
+        var bids = adResponse.bid;
 
         /* --------------------------------------------------------------------------------- */
 
@@ -258,7 +296,7 @@ function ImproveDigitalHtb(configs) {
                  * key to a key that represents the placement in the configuration and in the bid responses.
                  */
 
-                if (curReturnParcel.xSlotRef.someCriteria === bids[i].someCriteria) {
+                if (curReturnParcel.requestId === bids[i].id) {
                     curBid = bids[i];
                     break;
                 }
@@ -271,7 +309,7 @@ function ImproveDigitalHtb(configs) {
             headerStatsInfo[curReturnParcel.htSlot.getId()] = [curReturnParcel.xSlotName];
 
             /* No matching bid found so its a pass */
-            if (!curBid) {
+            if (!curBid || typeof curBid.price === 'undefined' || curBid.price === 0) {
                 if (__profile.enabledAnalytics.requestTime) {
                     __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
                 }
@@ -283,10 +321,26 @@ function ImproveDigitalHtb(configs) {
             /* Using the above variable, curBid, extract various information about the bid and assign it to
             * these local variables */
 
-            var bidPrice = curBid.price; /* the bid price for the given slot */
-            var bidSize = [curBid.width, curBid.height]; /* the size of the given slot */
-            var bidCreative = curBid.adm; /* the creative/adm for the given slot that will be rendered if is the winner. */
-            var bidDealId = curBid.dealid; /* the dealId if applicable for this slot. */
+            var bidPrice = curBid.price * 100; /* the bid price for the given slot */
+            var bidSize = [curBid.w, curBid.h]; /* the size of the given slot */
+
+            var syncString = "";
+            var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
+
+            for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
+                syncString += (syncString === "")? "document.writeln(\"" : "";
+                var syncInd = syncArray[syncCounter];
+                syncInd = syncInd.replace(/\//g, '\\\/');
+                syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
+            }
+            syncString += (syncString === "")? "" : "\")";
+
+            var nurl = "";
+            if (curBid.nurl && curBid.nurl.length > 0) {
+                nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+            }
+            var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
+            var bidDealId = curBid.pid; /* the dealId if applicable for this slot. */
 
             /* ---------------------------------------------------------------------------------------*/
 
@@ -395,9 +449,9 @@ function ImproveDigitalHtb(configs) {
                 pmid: 'ix_imdi_dealid'
             },
             lineItemType: Constants.LineItemTypes.ID_AND_SIZE,
-            callbackType: Partner.CallbackTypes.ID, // Callback type, please refer to the readme for details
-            architecture: Partner.Architectures.SRA, // Request architecture, please refer to the readme for details
-            requestType: Partner.RequestTypes.ANY // Request type, jsonp, ajax, or any.
+            callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
+            architecture: Partner.Architectures.MRA, // Multi-request Architecture
+            requestType: Partner.RequestTypes.JSONP // Use only JSONP for bid requests
         };
         /* ---------------------------------------------------------------------------------------*/
 
@@ -425,8 +479,8 @@ function ImproveDigitalHtb(configs) {
                 roundingType: 'FLOOR', // jshint ignore:line
                 floor: 0,
                 buckets: [{
-                    max: 2000, // Up to 20 dollar (above 5 cents)
-                    step: 5 // use 5 cent increments
+                    max: 10000, // Up to 20 dollar (above 5 cents)
+                    step: 1 // use 5 cent increments
                 }, {
                     max: 5000, // Up to 50 dollars (above 20 dollars)
                     step: 100 // use 1 dollar increments
