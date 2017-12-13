@@ -17,6 +17,16 @@
  * Utilities
  * ---------------------------------- */
 
+function createGetIdFunc(input) {
+    return function() {
+        return input;
+    };
+}
+
+var incrementalId = 2222222222;
+function getRandomId() {
+    return incrementalId++;
+}
 /**
  * Returns an array of parcels based on all of the xSlot/htSlot combinations defined
  * in the partnerConfig (simulates a session in which all of them were requested).
@@ -38,16 +48,24 @@ function generateReturnParcels(profile, partnerConfig) {
                 }
             }
             for (var i = 0; i < xSlotsArray.length; i++) {
+                var getId = createGetIdFunc(htSlotName);
                 var xSlotName = xSlotsArray[i];
                 returnParcels.push({
                     partnerId: profile.partnerId,
+<<<<<<< HEAD
                     htSlot: htSlot,
+=======
+                    htSlot: {
+                        getId: getId
+                    },
+>>>>>>> Unit test : generateRequestObj.spec.js
                     ref: "",
                     xSlotRef: partnerConfig.xSlots[xSlotName],
-                    requestId: '_' + Date.now()
+                    requestId: '_' + getRandomId()
                 });
             }
         }
+        //break;
     }
 
     return returnParcels;
@@ -57,6 +75,21 @@ function generateReturnParcels(profile, partnerConfig) {
  * Testing
  * ---------------------------------- */
 
+var expectedRequestObjects = {
+    "htSlot1": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111111%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222222%22%2C%22pid%22%3A1053688%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot2": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111112%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222223%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_smoke_test%22%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot3": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111113%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222224%22%2C%22pid%22%3A1053687%2C%22banner%22%3A%7B%22w%22%3A600%2C%22h%22%3A290%7D%7D%5D%7D%7D",
+    "htSlot4": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111114%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222225%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_size_filter_test%22%2C%22banner%22%3A%7B%22w%22%3A800%2C%22h%22%3A600%7D%7D%5D%7D%7D",
+    "htSlot5": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111115%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222226%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_key_value_test%22%2C%22kvw%22%3A%7B%22hbkv%22%3A%5B%2201%22%5D%7D%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot6": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111116%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222227%22%2C%22pid%22%3A1053689%2C%22kvw%22%3A%7B%22testKey%22%3A%5B%22testValue%22%5D%7D%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot7": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111117%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222228%22%2C%22currency%22%3A%22USD%22%2C%22pid%22%3A1053688%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot8": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111118%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222229%22%2C%22currency%22%3A%22AUD%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_smoke_test%22%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot9": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111119%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222230%22%2C%22currency%22%3A%22DKK%22%2C%22pid%22%3A1053687%2C%22banner%22%3A%7B%22w%22%3A600%2C%22h%22%3A290%7D%7D%5D%7D%7D",
+    "htSlot10": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111120%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222231%22%2C%22currency%22%3A%22CZK%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_size_filter_test%22%2C%22banner%22%3A%7B%22w%22%3A800%2C%22h%22%3A600%7D%7D%5D%7D%7D",
+    "htSlot11": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111121%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222232%22%2C%22currency%22%3A%22GBP%22%2C%22pubid%22%3A1032%2C%22pkey%22%3A%22data_team_test_hb_key_value_test%22%2C%22kvw%22%3A%7B%22hbkv%22%3A%5B%2201%22%5D%7D%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+    "htSlot12": "http://ad.360yield.com/hb?jsonp=%7B%22bid_request%22%3A%7B%22id%22%3A%22_1111111122%22%2C%22callback%22%3A%22undefined.ImproveDigitalHtb.adResponseCallback%22%2C%22version%22%3A%220.0.1-JS-4.3.3%22%2C%22imp%22%3A%5B%7B%22id%22%3A%22_2222222233%22%2C%22currency%22%3A%22CHF%22%2C%22pid%22%3A1053689%2C%22kvw%22%3A%7B%22testKey%22%3A%5B%22testValue%22%5D%7D%2C%22banner%22%3A%7B%7D%7D%5D%7D%7D",
+};
+
 describe('generateRequestObj', function () {
 
     /* Setup and Library Stub
@@ -64,6 +97,12 @@ describe('generateRequestObj', function () {
     var inspector = require('schema-inspector');
     var proxyquire = require('proxyquire').noCallThru();
     var libraryStubData = require('./support/libraryStubData.js');
+    var incremental = 1111111111;
+    libraryStubData["system.js"]["generateUniqueId"] = function() {
+        var result = '_' + incremental;
+        incremental++;
+        return result;
+    }
     var partnerModule = proxyquire('../improve-digital-htb.js', libraryStubData);
     var partnerConfig = require('./support/mockPartnerConfig.json');
     var expect = require('chai').expect;
@@ -128,7 +167,7 @@ describe('generateRequestObj', function () {
     } else {
         for (var i = 0; i < returnParcels.length; i++) {
             requestObject = partnerModule.generateRequestObj([returnParcels[i]]);
-
+            var expectedUrl = expectedRequestObjects[returnParcels[i].htSlot.getId()]
             /* Simple type checking, should always pass */
             it('MRA - should return a correctly formatted object', function () {
                 var result = inspector.validate({
@@ -138,9 +177,6 @@ describe('generateRequestObj', function () {
                         url: {
                             type: 'string',
                             minLength: 1
-                        },
-                        data: {
-                            type: 'object'
                         },
                         callbackId: {
                             type: 'string',
@@ -162,10 +198,7 @@ describe('generateRequestObj', function () {
 
             /* ---------- ADD MORE TEST CASES TO TEST AGAINST REAL VALUES ------------*/
             it('should correctly build a url', function () {
-                /* Write unit tests to verify that your bid request url contains the correct
-                    * request params, url, etc.
-                    */
-                expect(requestObject).to.exist;
+                expect(requestObject.url).to.equal(expectedUrl);
             });
             /* -----------------------------------------------------------------------*/
         }
