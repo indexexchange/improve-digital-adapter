@@ -153,7 +153,7 @@ function ImproveDigitalHtb(configs) {
                 requestId: callbackId,
                 callback: SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
             };
-            requestParameters.singleRequestMode = returnParcels.length > 1 ? true : false;
+            requestParameters.singleRequestMode = false;
 
             var protocol = Browser.getProtocol();
             requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
@@ -263,7 +263,6 @@ function ImproveDigitalHtb(configs) {
         var bids = adResponse.bid;
 
         /* --------------------------------------------------------------------------------- */
-
         for (var j = 0; j < returnParcels.length; j++) {
 
             var curReturnParcel = returnParcels[j];
@@ -293,7 +292,7 @@ function ImproveDigitalHtb(configs) {
 
             /* No matching bid found so its a pass */
             if (!curBid || typeof curBid.price === 'undefined' || curBid.price === 0) {
-                if (__profile.enabledAnalytics.requestTime) {
+                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
                     __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
                 }
                 curReturnParcel.pass = true;
@@ -322,25 +321,33 @@ function ImproveDigitalHtb(configs) {
             var syncString = "";
             var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
 
+            var bidCreative;
             var pixelUrl = '';
-            for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
-                syncString += (syncString === "")? "document.writeln(\"" : "";
-                var syncInd = syncArray[syncCounter];
-                syncInd = syncInd.replace(/\//g, '\\\/');
-                syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
-            }
-            syncString += (syncString === "")? "" : "\")";
+            if (curBid.adm) {
+                for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
+                    syncString += (syncString === "") ? "document.writeln(\"" : "";
+                    var syncInd = syncArray[syncCounter];
+                    syncInd = syncInd.replace(/\//g, '\\\/');
+                    syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
+                }
+                syncString += (syncString === "") ? "" : "\")";
 
-            var nurl = "";
-            if (curBid.nurl && curBid.nurl.length > 0) {
-                nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+                var nurl = "";
+                if (curBid.nurl && curBid.nurl.length > 0) {
+                    nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+                }
+                var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
+                var bidDealId = curBid.pid;
+            } else {
+                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
+                    __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
+                }
+                curReturnParcel.pass = true;
+                continue;
             }
-            var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
-            var bidDealId = curBid.pid; /* the dealId if applicable for this slot. */
-            
+
             /* ---------------------------------------------------------------------------------------*/
 
-            curBid = null;
             if (bidIsPass) {
                 //? if (DEBUG) {
                 Scribe.info(__profile.partnerId + ' returned pass for { id: ' + adResponse.id + ' }.');
@@ -352,7 +359,7 @@ function ImproveDigitalHtb(configs) {
                 continue;
             }
 
-            if (__profile.enabledAnalytics.requestTime) {
+            if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
                 __baseClass._emitStatsEvent(sessionId, 'hs_slot_bid', headerStatsInfo);
             }
 
