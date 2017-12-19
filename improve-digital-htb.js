@@ -174,7 +174,7 @@ function ImproveDigitalHtb(configs) {
                 requestId: callbackId,
                 callback: SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
             };
-            requestParameters.singleRequestMode = returnParcels.length > 1 ? true : false;
+            requestParameters.singleRequestMode = false;
 
             var protocol = Browser.getProtocol();
             requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
@@ -280,28 +280,27 @@ function ImproveDigitalHtb(configs) {
         var bids = adResponse.bid;
 
         /* --------------------------------------------------------------------------------- */
-
         for (var j = 0; j < returnParcels.length; j++) {
             var curReturnParcel = returnParcels[j];
 
             /* ----------- Fill this out to find a matching bid for the current parcel ------------- */
             var curBid;
 
-            for (var i = 0; i < bids.length; i++) {
+            if (bids && bids.length) {
+                for (var i = 0; i < bids.length; i++) {
 
-                /**
-                 * This section maps internal returnParcels and demand returned from the bid request.
-                 * In order to match them correctly, they must be matched via some criteria. This
-                 * is usually some sort of placements or inventory codes. Please replace the someCriteria
-                 * key to a key that represents the placement in the configuration and in the bid responses.
-                 */
-
-                if (curReturnParcel.requestId === bids[i].id) {
-                    curBid = bids[i];
-                    break;
+                    /**
+                     * This section maps internal returnParcels and demand returned from the bid request.
+                     * In order to match them correctly, they must be matched via some criteria. This
+                     * is usually some sort of placements or inventory codes. Please replace the someCriteria
+                     * key to a key that represents the placement in the configuration and in the bid responses.
+                     */
+                    if (curReturnParcel.requestId === bids[i].id) {
+                        curBid = bids[i];
+                        break;
+                    }
                 }
             }
-
             /* ------------------------------------------------------------------------------------*/
 
             /* HeaderStats information */
@@ -310,7 +309,7 @@ function ImproveDigitalHtb(configs) {
 
             /* No matching bid found so its a pass */
             if (!curBid || typeof curBid.price === 'undefined' || curBid.price === 0) {
-                if (__profile.enabledAnalytics.requestTime) {
+                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
                     __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
                 }
                 curReturnParcel.pass = true;
@@ -327,24 +326,32 @@ function ImproveDigitalHtb(configs) {
             var syncString = "";
             var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
 
-            for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
-                syncString += (syncString === "")? "document.writeln(\"" : "";
-                var syncInd = syncArray[syncCounter];
-                syncInd = syncInd.replace(/\//g, '\\\/');
-                syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
-            }
-            syncString += (syncString === "")? "" : "\")";
+            var bidCreative;
+            if (curBid.adm) {
+                for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
+                    syncString += (syncString === "") ? "document.writeln(\"" : "";
+                    var syncInd = syncArray[syncCounter];
+                    syncInd = syncInd.replace(/\//g, '\\\/');
+                    syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
+                }
+                syncString += (syncString === "") ? "" : "\")";
 
-            var nurl = "";
-            if (curBid.nurl && curBid.nurl.length > 0) {
-                nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+                var nurl = "";
+                if (curBid.nurl && curBid.nurl.length > 0) {
+                    nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+                }
+                var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
+                var bidDealId = curBid.pid;
+            } else {
+                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
+                    __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
+                }
+                curReturnParcel.pass = true;
+                continue;
             }
-            var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
-            var bidDealId = curBid.pid; /* the dealId if applicable for this slot. */
-
             /* ---------------------------------------------------------------------------------------*/
 
-            if (__profile.enabledAnalytics.requestTime) {
+            if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
                 __baseClass._emitStatsEvent(sessionId, 'hs_slot_bid', headerStatsInfo);
             }
 
@@ -448,7 +455,7 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-            lineItemType: Constants.LineItemTypes.ID_AND_SIZE,
+            lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
             callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
             requestType: Partner.RequestTypes.JSONP // Use only JSONP for bid requests
@@ -479,8 +486,8 @@ function ImproveDigitalHtb(configs) {
                 roundingType: 'FLOOR', // jshint ignore:line
                 floor: 0,
                 buckets: [{
-                    max: 10000, // Up to 20 dollar (above 5 cents)
-                    step: 1 // use 5 cent increments
+                    max: 2000, // Up to 20 dollar (above 5 cents)
+                    step: 5 // use 5 cent increments
                 }, {
                     max: 5000, // Up to 50 dollars (above 20 dollars)
                     step: 100 // use 1 dollar increments

@@ -17,6 +17,25 @@
  * Utilities
  * ---------------------------------- */
 
+function isEmpty(obj) {
+    for(var prop in obj) {
+        if(obj.hasOwnProperty(prop))
+            return false;
+    }
+
+    return true;
+}
+
+function createGetIdFunc(input) {
+    return function() {
+        return input;
+    };
+}
+
+var incrementalId = 2222222222;
+function getRandomId() {
+    return incrementalId++;
+}
 /**
  * Returns an array of parcels based on all of the xSlot/htSlot combinations defined
  * in the partnerConfig (simulates a session in which all of them were requested).
@@ -32,17 +51,16 @@ function generateReturnParcels(profile, partnerConfig) {
         if (partnerConfig.mapping.hasOwnProperty(htSlotName)) {
             var xSlotsArray = partnerConfig.mapping[htSlotName];
             for (var i = 0; i < xSlotsArray.length; i++) {
+                var getId = createGetIdFunc(htSlotName);
                 var xSlotName = xSlotsArray[i];
                 returnParcels.push({
                     partnerId: profile.partnerId,
                     htSlot: {
-                        getId: function () {
-                            return htSlotName
-                        }
+                        getId: getId
                     },
                     ref: "",
                     xSlotRef: partnerConfig.xSlots[xSlotName],
-                    requestId: '_' + Date.now()
+                    requestId: '_' + getRandomId()
                 });
             }
         }
@@ -78,256 +96,33 @@ describe('parseResponse', function () {
 
     describe('should correctly parse bids:', function () {
         /* Simple type checking on the returned objects, should always pass */
-        it('each parcel should have the required fields set', function () {
+        //it('each parcel should have the required fields set', function () {
             returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
 
             /* Get mock response data from our responseData file */
             mockData = responseData.bid;
+            var expectedResults = responseData.results;
 
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
+            for (var i = 0; i < mockData.length; i++) {
                 /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                var result = inspector.validate({
-                    type: 'object',
-                    properties: {
-                        targetingType: {
-                            type: 'string',
-                            eq: 'slot'
-                        },
-                        targeting: {
-                            type: 'object',
-                            properties: {
-                                [partnerModule.profile.targetingKeys.id]: {
-                                    type: 'array',
-                                    exactLength: 1,
-                                    items: {
-                                        type: 'string',
-                                        minLength: 1
-                                    }
-                                },
-                                [partnerModule.profile.targetingKeys.om]: {
-                                    type: 'array',
-                                    exactLength: 1,
-                                    items: {
-                                        type: 'string',
-                                        minLength: 1
-                                    }
-                                },
-                                pubKitAdId: {
-                                    type: 'string',
-                                    minLength: 1
-                                }
+                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]); {
+                    var requestId = returnParcels[i].requestId;
+                    expect(isEmpty(responseData.results[i]), "expected results cannot be empty").to.be.false;
+                    it('Parcel for request id ' + requestId + ' should have the required fields set', function () {
+                        for (var responseAttr in responseData.results[i]) {
+                            if (responseAttr === "targeting") {
+                                expect(responseData.results[i][responseAttr].ix_imdi_dealid, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_dealid should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_dealid) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_dealid).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_dealid);
+                                expect(responseData.results[i][responseAttr].ix_imdi_cpm, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_cpm should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_cpm) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_cpm).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_cpm);
+                                expect(responseData.results[i][responseAttr].ix_imdi_id, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_id should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_id) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_id).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_id);
+                                expect(responseData.results[i][responseAttr].pubKitAdId, "(Request:" + requestId + ") Attribute " + responseAttr + ".pubKitAdId should be a string starting with an underscore.  Instead it is " + responseData.results[i][responseAttr].pubKitAdId).to.match(/^_[a-zA-Z0-9]+$/);
+                            } else {
+                                expect(returnParcels[i][responseAttr], "(Request:" + requestId + ") Required attribute " + responseAttr + " does not exist").to.exist;
+                                expect(responseData.results[i][responseAttr], "(Request:" + requestId + ") Attribute " + responseAttr + " should be " + JSON.stringify(responseData.results[i][responseAttr]) + ".  Instead it is " + responseData.results[i][responseAttr]).to.deep.equal(returnParcels[i][responseAttr]);
                             }
-                        },
-                        price: {
-                            type: 'number'
-                        },
-                        size: {
-                            type: 'array',
-                        },
-                        adm: {
-                            type: 'string',
-                            minLength: 1
                         }
-                    }
-                }, returnParcels[i]);
-
-                expect(result.valid, result.format()).to.be.true;
+                    });
+                }
             }
-        });
-
-        /* ---------- ADD MORE TEST CASES TO TEST AGAINST REAL VALUES ------------*/
-        it('each parcel should have the correct values set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-            /* Get mock response data from our responseData file */
-            mockData = responseData.bid;
-
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                /* Add test cases to test against each of the parcel's set fields
-                 * to make sure the response was parsed correctly.
-                 *
-                 * The parcels have already been parsed and should contain all the
-                 * necessary demand.
-                 */
-
-                expect(returnParcels[i]).to.exist;
-            }
-        });
-        /* -----------------------------------------------------------------------*/
-    });
-
-    describe('should correctly parse passes: ', function () {
-
-
-        it('each parcel should have the required fields set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-            /* Get mock response data from our responseData file */
-            mockData = responseData.pass;
-
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                var result = inspector.validate({
-                    type: 'object',
-                    properties: {
-                        pass: {
-                            type: 'boolean',
-                            eq: true,
-
-                        }
-                    }
-                }, returnParcels[i]);
-
-                expect(result.valid, result.format()).to.be.true;
-            }
-        });
-
-        /* ---------- ADD MORE TEST CASES TO TEST AGAINST REAL VALUES ------------*/
-        it('each parcel should have the correct values set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-            /* Get mock response data from our responseData file */
-            mockData = responseData.pass;
-
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                /* Add test cases to test against each of the parcel's set fields
-                 * to make sure the response was parsed correctly.
-                 *
-                 * The parcels have already been parsed and should contain all the
-                 * necessary demand.
-                 */
-
-                expect(returnParcels[i]).to.exist;
-            }
-        });
-        /* -----------------------------------------------------------------------*/
-    });
-
-    describe('should correctly parse deals: ', function () {
-
-        /* Simple type checking on the returned objects, should always pass */
-        it('each parcel should have the required fields set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-            /* Get mock response data from our responseData file */
-            mockData = responseData.deals;
-
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                var result = inspector.validate({
-                    type: 'object',
-                    properties: {
-                        targetingType: {
-                            type: 'string',
-                            eq: 'slot'
-                        },
-                        targeting: {
-                            type: 'object',
-                            properties: {
-                                [partnerModule.profile.targetingKeys.id]: {
-                                    type: 'array',
-                                    exactLength: 1,
-                                    items: {
-                                        type: 'string',
-                                        minLength: 1
-                                    }
-                                },
-                                [partnerModule.profile.targetingKeys.om]: {
-                                    type: 'array',
-                                    exactLength: 1,
-                                    items: {
-                                        type: 'string',
-                                        minLength: 1
-                                    }
-                                },
-                                [partnerModule.profile.targetingKeys.pm]: {
-                                    type: 'array',
-                                    exactLength: 1,
-                                    items: {
-                                        type: 'string',
-                                        minLength: 1
-                                    }
-                                },
-                                pubKitAdId: {
-                                    type: 'string',
-                                    minLength: 1
-                                }
-                            }
-                        },
-                        price: {
-                            type: 'number'
-                        },
-                        size: {
-                            type: 'array',
-                        },
-                        adm: {
-                            type: 'string',
-                            minLength: 1
-                        },
-                    }
-                }, returnParcels[i]);
-
-                expect(result.valid, result.format()).to.be.true;
-            }
-        });
-
-        /* ---------- ADD MORE TEST CASES TO TEST AGAINST REAL VALUES ------------*/
-        it('each parcel should have the correct values set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
-
-            /* Get mock response data from our responseData file */
-            mockData = responseData.deals;
-
-            /* IF SRA, parse all parcels at once */
-            if (partnerProfile.architecture) partnerModule.parseResponse(1, mockData, returnParcels);
-
-            for (var i = 0; i < returnParcels.length; i++) {
-
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]);
-
-                /* Add test cases to test against each of the parcel's set fields
-                 * to make sure the response was parsed correctly.
-                 *
-                 * The parcels have already been parsed and should contain all the
-                 * necessary demand.
-                 */
-
-                expect(returnParcels[i]).to.exist;
-            }
-        });
-        /* -----------------------------------------------------------------------*/
+        //});
     });
 });
