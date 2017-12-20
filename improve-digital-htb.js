@@ -482,7 +482,7 @@ function ImproveDigitalHtb(configs) {
             targeting: {
                 inputCentsMultiplier: 1, // Input is in cents
                 outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 0, // With 0 decimal places
+                outputPrecision: 2, // With 2 decimal places
                 roundingType: 'FLOOR', // jshint ignore:line
                 floor: 0,
                 buckets: [{
@@ -498,7 +498,7 @@ function ImproveDigitalHtb(configs) {
             price: {
                 inputCentsMultiplier: 1, // Input is in cents
                 outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 0, // With 0 decimal places
+                outputPrecision: 2, // With 2 decimal places
                 roundingType: 'NONE',
             },
             //? }
