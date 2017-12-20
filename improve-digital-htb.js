@@ -469,6 +469,63 @@ function ImproveDigitalHtb(configs) {
         }
         //? }
 
+<<<<<<< HEAD
+=======
+        /*
+         * Adjust the below bidTransformerConfigs variable to match the units the adapter
+         * sends bids in and to match line item setup. This configuration variable will
+         * be used to transform the bids going into DFP.
+         */
+
+        /* - Please fill out this bid trasnformer according to your module's bid response format - */
+        var bidTransformerConfigs = {
+            //? if (FEATURES.GPT_LINE_ITEMS) {
+            targeting: {
+                inputCentsMultiplier: 1, // Input is in cents
+                outputCentsDivisor: 1, // Output as cents
+                outputPrecision: 2, // With 2 decimal places
+                roundingType: 'FLOOR', // jshint ignore:line
+                floor: 0,
+                buckets: [{
+                    max: 2000, // Up to 20 dollar (above 5 cents)
+                    step: 5 // use 5 cent increments
+                }, {
+                    max: 5000, // Up to 50 dollars (above 20 dollars)
+                    step: 100 // use 1 dollar increments
+                }]
+            },
+            //? }
+            //? if (FEATURES.RETURN_PRICE) {
+            price: {
+                inputCentsMultiplier: 1, // Input is in cents
+                outputCentsDivisor: 1, // Output as cents
+                outputPrecision: 2, // With 2 decimal places
+                roundingType: 'NONE',
+            },
+            //? }
+        };
+
+        /* --------------------------------------------------------------------------------------- */
+
+        if (configs.bidTransformer) {
+            //? if (FEATURES.GPT_LINE_ITEMS) {
+            bidTransformerConfigs.targeting = configs.bidTransformer;
+            //? }
+            //? if (FEATURES.RETURN_PRICE) {
+            bidTransformerConfigs.price.inputCentsMultiplier = configs.bidTransformer.inputCentsMultiplier;
+            //? }
+        }
+
+        __bidTransformers = {};
+
+        //? if (FEATURES.GPT_LINE_ITEMS) {
+        __bidTransformers.targeting = BidTransformer(bidTransformerConfigs.targeting);
+        //? }
+        //? if (FEATURES.RETURN_PRICE) {
+        __bidTransformers.price = BidTransformer(bidTransformerConfigs.price);
+        //? }
+
+>>>>>>> Modify rounding to 2 decimal places
         __baseClass = Partner(__profile, configs, null, {
             parseResponse: __parseResponse,
             generateRequestObj: __generateRequestObj,
