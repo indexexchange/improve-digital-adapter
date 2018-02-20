@@ -29,9 +29,6 @@ var ConfigValidators = require('config-validators.js');
 var PartnerSpecificValidator = require('improve-digital-htb-validator.js');
 var Scribe = require('scribe.js');
 
-
-var improvedigitalclient = require('./improvedigitaladserverjsclient.js');
-
 var EventsService;
 var RenderService;
 
@@ -65,6 +62,27 @@ function ImproveDigitalHtb(configs) {
      * @private {object}
      */
     var __profile;
+
+    /**
+     * Instances of BidTransformer for transforming bids.
+     *
+     * @private {object}
+     */
+    var __bidTransformers;
+
+    /**
+     * Instance of Improve Digital Ad Server JS Client
+     *
+     * @private {object}
+     */
+    var __adServerClient = new ImproveDigitalAdServerJSClient();
+
+    /**
+     * Version of Improve Digital Index Exchange Adapter
+     *
+     * @private {object}
+     */
+    var __version = "0.0.1";
 
     /* =====================================
      * Functions
@@ -147,7 +165,6 @@ function ImproveDigitalHtb(configs) {
 
         if(returnParcels && returnParcels.length) {
             var requestParameters = {
-                httpRequestType: __adServerClient.CONSTANTS.HTTP_REQUEST_TYPE.GET,
                 returnObjType: __adServerClient.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT,
                 libVersion: __version,
                 requestId: callbackId,
@@ -162,23 +179,18 @@ function ImproveDigitalHtb(configs) {
                 var parcel = returnParcels[parcelCounter];
                 if (parcel) {
                     // The client needs an adUnitId.  The htSlot Id is guaranteed to be unique for the page
-                    parcel.xSlotRef.adUnitId = parcel.htSlot.getId();
-                    parcel.xSlotRef.id = parcel.requestId;
-                    requestObject.push(parcel.xSlotRef);
+                    var xSlotCopy = JSON.parse(JSON.stringify(parcel.xSlotRef));
+                    xSlotCopy.adUnitId = parcel.htSlot.getId();
+                    xSlotCopy.id = parcel.requestId;
+                    requestObject.push(xSlotCopy);
                 }
             }
             var request = __adServerClient.createRequest(requestObject, requestParameters);
-            for (parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
-                var parcel = returnParcels[parcelCounter];
-                // Delete the adUnitId
-                parcel.xSlotRef.adUnitId = undefined;
-            }
             if (request && request.requests && request.requests[0] && request.requests[0].url) {
                 queryObj.url = request.requests[0].url;
                 queryObj.callbackId = callbackId;
             }
         }
-
         return queryObj;
     }
 
@@ -195,9 +207,7 @@ function ImproveDigitalHtb(configs) {
      */
     function adResponseCallback(adResponse) {
         /* get callbackId from adResponse here */
-        if (adResponse.id) {
-            __baseClass._adResponseStore[id] = adResponse;
-        }
+        __baseClass._adResponseStore[adResponse.id] = adResponse;
     }
     /* -------------------------------------------------------------------------- */
 
@@ -469,63 +479,6 @@ function ImproveDigitalHtb(configs) {
         }
         //? }
 
-<<<<<<< HEAD
-=======
-        /*
-         * Adjust the below bidTransformerConfigs variable to match the units the adapter
-         * sends bids in and to match line item setup. This configuration variable will
-         * be used to transform the bids going into DFP.
-         */
-
-        /* - Please fill out this bid trasnformer according to your module's bid response format - */
-        var bidTransformerConfigs = {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            targeting: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 2, // With 2 decimal places
-                roundingType: 'FLOOR', // jshint ignore:line
-                floor: 0,
-                buckets: [{
-                    max: 2000, // Up to 20 dollar (above 5 cents)
-                    step: 5 // use 5 cent increments
-                }, {
-                    max: 5000, // Up to 50 dollars (above 20 dollars)
-                    step: 100 // use 1 dollar increments
-                }]
-            },
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            price: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 2, // With 2 decimal places
-                roundingType: 'NONE',
-            },
-            //? }
-        };
-
-        /* --------------------------------------------------------------------------------------- */
-
-        if (configs.bidTransformer) {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            bidTransformerConfigs.targeting = configs.bidTransformer;
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            bidTransformerConfigs.price.inputCentsMultiplier = configs.bidTransformer.inputCentsMultiplier;
-            //? }
-        }
-
-        __bidTransformers = {};
-
-        //? if (FEATURES.GPT_LINE_ITEMS) {
-        __bidTransformers.targeting = BidTransformer(bidTransformerConfigs.targeting);
-        //? }
-        //? if (FEATURES.RETURN_PRICE) {
-        __bidTransformers.price = BidTransformer(bidTransformerConfigs.price);
-        //? }
-
->>>>>>> Modify rounding to 2 decimal places
         __baseClass = Partner(__profile, configs, null, {
             parseResponse: __parseResponse,
             generateRequestObj: __generateRequestObj,
@@ -574,3 +527,227 @@ function ImproveDigitalHtb(configs) {
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = ImproveDigitalHtb;
+
+'use strict';
+
+function ImproveDigitalAdServerJSClient(endPoint) {
+  this.CONSTANTS = {
+    HTTP_SECURITY: {
+      STANDARD: 0,
+      SECURE: 1
+    },
+    AD_SERVER_BASE_URL: 'ad.360yield.com',
+    END_POINT: endPoint || 'hb',
+    AD_SERVER_URL_PARAM: 'jsonp=',
+    CLIENT_VERSION: 'JS-5.0.0',
+    MAX_URL_LENGTH: 2083,
+    ERROR_CODES: {
+      MISSING_PLACEMENT_PARAMS: 2,
+      LIB_VERSION_MISSING: 3
+    },
+    RETURN_OBJ_TYPE: {
+      DEFAULT: 0,
+      URL_PARAMS_SPLIT: 1
+    }
+  };
+
+  this.getErrorReturn = function (errorCode) {
+    return {
+      idMappings: {},
+      requests: {},
+      'errorCode': errorCode
+    };
+  };
+
+  this.createRequest = function (requestObject, requestParameters, extraRequestParameters) {
+    if (!requestParameters.libVersion) {
+      return this.getErrorReturn(this.CONSTANTS.ERROR_CODES.LIB_VERSION_MISSING);
+    }
+
+    requestParameters.returnObjType = requestParameters.returnObjType || this.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT;
+
+    var impressionObjects = [];
+    var impressionObject = void 0;
+    if (Utilities.isArray(requestObject)) {
+      for (var counter = 0; counter < requestObject.length; counter++) {
+        impressionObject = this.createImpressionObject(requestObject[counter]);
+        impressionObjects.push(impressionObject);
+      }
+    } else {
+      impressionObject = this.createImpressionObject(requestObject);
+      impressionObjects.push(impressionObject);
+    }
+
+    var returnIdMappings = true;
+    if (requestParameters.returnObjType === this.CONSTANTS.RETURN_OBJ_TYPE.URL_PARAMS_SPLIT) {
+      returnIdMappings = false;
+    }
+
+    var returnObject = {};
+    returnObject.requests = [];
+    if (returnIdMappings) {
+      returnObject.idMappings = [];
+    }
+    var errors = null;
+
+    var baseUrl = (requestParameters.secure === 1 ? 'https' : 'http') + '://' + this.CONSTANTS.AD_SERVER_BASE_URL + '/' + this.CONSTANTS.END_POINT + '?' + this.CONSTANTS.AD_SERVER_URL_PARAM;
+
+    var bidRequestObject = {
+      bid_request: this.createBasicBidRequestObject(requestParameters, extraRequestParameters)
+    };
+    for (var _counter = 0; _counter < impressionObjects.length; _counter++) {
+      impressionObject = impressionObjects[_counter];
+
+      if (impressionObject.errorCode) {
+        errors = errors || [];
+        errors.push({
+          errorCode: impressionObject.errorCode,
+          adUnitId: impressionObject.adUnitId
+        });
+      } else {
+        if (returnIdMappings) {
+          returnObject.idMappings.push({
+            adUnitId: impressionObject.adUnitId,
+            id: impressionObject.impressionObject.id
+          });
+        }
+        bidRequestObject.bid_request.imp = bidRequestObject.bid_request.imp || [];
+        bidRequestObject.bid_request.imp.push(impressionObject.impressionObject);
+
+        var writeLongRequest = false;
+        var outputUri = baseUrl + encodeURIComponent(JSON.stringify(bidRequestObject));
+        if (outputUri.length > this.CONSTANTS.MAX_URL_LENGTH) {
+          writeLongRequest = true;
+          if (bidRequestObject.bid_request.imp.length > 1) {
+            // Pop the current request and process it again in the next iteration
+            bidRequestObject.bid_request.imp.pop();
+            if (returnIdMappings) {
+              returnObject.idMappings.pop();
+            }
+            _counter--;
+          }
+        }
+
+        if (writeLongRequest || !requestParameters.singleRequestMode || _counter === impressionObjects.length - 1) {
+          returnObject.requests.push(this.formatRequest(requestParameters, bidRequestObject));
+          bidRequestObject = {
+            bid_request: this.createBasicBidRequestObject(requestParameters, extraRequestParameters)
+          };
+        }
+      }
+    }
+
+    if (errors) {
+      returnObject.errors = errors;
+    }
+
+    return returnObject;
+  };
+
+  this.formatRequest = function (requestParameters, bidRequestObject) {
+    switch (requestParameters.returnObjType) {
+      case this.CONSTANTS.RETURN_OBJ_TYPE.URL_PARAMS_SPLIT:
+        return {
+          method: 'GET',
+          url: '//' + this.CONSTANTS.AD_SERVER_BASE_URL + '/' + this.CONSTANTS.END_POINT,
+          data: '' + this.CONSTANTS.AD_SERVER_URL_PARAM + JSON.stringify(bidRequestObject)
+        };
+      default:
+        var baseUrl = (requestParameters.secure === 1 ? 'https' : 'http') + '://' + (this.CONSTANTS.AD_SERVER_BASE_URL + '/') + (this.CONSTANTS.END_POINT + '?' + this.CONSTANTS.AD_SERVER_URL_PARAM);
+        return {
+          url: baseUrl + encodeURIComponent(JSON.stringify(bidRequestObject))
+        };
+    }
+  };
+
+  this.createBasicBidRequestObject = function (requestParameters, extraRequestParameters) {
+    var impressionBidRequestObject = {};
+    if (requestParameters.requestId) {
+      impressionBidRequestObject.id = requestParameters.requestId;
+    } else {
+      impressionBidRequestObject.id = System.generateUniqueId();
+    }
+    if (requestParameters.domain) {
+      impressionBidRequestObject.domain = requestParameters.domain;
+    }
+    if (requestParameters.page) {
+      impressionBidRequestObject.page = requestParameters.page;
+    }
+    if (requestParameters.ref) {
+      impressionBidRequestObject.ref = requestParameters.ref;
+    }
+    if (requestParameters.callback) {
+      impressionBidRequestObject.callback = requestParameters.callback;
+    }
+    if ('secure' in requestParameters) {
+      impressionBidRequestObject.secure = requestParameters.secure;
+    }
+    if (requestParameters.libVersion) {
+      impressionBidRequestObject.version = requestParameters.libVersion + '-' + this.CONSTANTS.CLIENT_VERSION;
+    }
+    if (requestParameters.referrer) {
+      impressionBidRequestObject.referrer = requestParameters.referrer;
+    }
+    if (extraRequestParameters) {
+      for (var prop in extraRequestParameters) {
+        impressionBidRequestObject[prop] = extraRequestParameters[prop];
+      }
+    }
+
+    return impressionBidRequestObject;
+  };
+
+  this.createImpressionObject = function (placementObject) {
+    var outputObject = {};
+    var impressionObject = {};
+    outputObject.impressionObject = impressionObject;
+
+    if (placementObject.id) {
+      impressionObject.id = placementObject.id;
+    } else {
+      impressionObject.id = System.generateUniqueId();
+    }
+    if (placementObject.adUnitId) {
+      outputObject.adUnitId = placementObject.adUnitId;
+    }
+    if (placementObject.currency) {
+      impressionObject.currency = placementObject.currency.toUpperCase();
+    }
+    if (placementObject.placementId) {
+      impressionObject.pid = placementObject.placementId;
+    }
+    if (placementObject.publisherId) {
+      impressionObject.pubid = placementObject.publisherId;
+    }
+    if (placementObject.placementKey) {
+      impressionObject.pkey = placementObject.placementKey;
+    }
+    if (placementObject.transactionId) {
+      impressionObject.tid = placementObject.transactionId;
+    }
+    if (placementObject.keyValues) {
+      for (var key in placementObject.keyValues) {
+        for (var valueCounter = 0; valueCounter < placementObject.keyValues[key].length; valueCounter++) {
+          impressionObject.kvw = impressionObject.kvw || {};
+          impressionObject.kvw[key] = impressionObject.kvw[key] || [];
+          impressionObject.kvw[key].push(placementObject.keyValues[key][valueCounter]);
+        }
+      }
+    }
+    if (placementObject.size && placementObject.size.w && placementObject.size.h) {
+      impressionObject.banner = {};
+      impressionObject.banner.w = placementObject.size.w;
+      impressionObject.banner.h = placementObject.size.h;
+    } else {
+      impressionObject.banner = {};
+    }
+
+    if (!impressionObject.pid && !impressionObject.pubid && !impressionObject.pkey && !(impressionObject.banner && impressionObject.banner.w && impressionObject.banner.h)) {
+      outputObject.impressionObject = null;
+      outputObject.errorCode = this.CONSTANTS.ERROR_CODES.MISSING_PLACEMENT_PARAMS;
+    }
+    return outputObject;
+  };
+}
+
+exports.ImproveDigitalAdServerJSClient = ImproveDigitalAdServerJSClient;
