@@ -155,7 +155,7 @@ describe('Partner Profile', function () {
                 },
                 lineItemType: {
                     type: 'integer',
-                    eq: 0
+                    eq: 1
                 },
                 callbackType: {
                     type: 'integer',
