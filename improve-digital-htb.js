@@ -24,13 +24,15 @@ var Size = require('size.js');
 var SpaceCamp = require('space-camp.js');
 var System = require('system.js');
 var Utilities = require('utilities.js');
-var Whoopsie = require('whoopsie.js');
+var EventsService;
+var RenderService;
+
+//? if (DEBUG) {
 var ConfigValidators = require('config-validators.js');
 var PartnerSpecificValidator = require('improve-digital-htb-validator.js');
 var Scribe = require('scribe.js');
-
-var EventsService;
-var RenderService;
+var Whoopsie = require('whoopsie.js');
+//? }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
@@ -444,7 +446,7 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-            lineItemType: Constants.LineItemTypes.ID_AND_SIZE,
+            lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
             callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
             requestType: Partner.RequestTypes.JSONP // Use only JSONP for bid requests
@@ -471,7 +473,7 @@ function ImproveDigitalHtb(configs) {
             targeting: {
                 inputCentsMultiplier: 1, // Input is in cents
                 outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 0, // With 2 decimal places
+                outputPrecision: 2, // With 2 decimal places
                 roundingType: 'FLOOR', // jshint ignore:line
                 floor: 0,
                 buckets: [{
