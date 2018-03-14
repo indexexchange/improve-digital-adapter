@@ -19,7 +19,6 @@
 
 var Inspector = require('../../../libs/external/schema-inspector.js');
 
-
 var custom = {
     impliesPresence: function (schema, candidate) {
         var implication = schema.$impliesPresence;
@@ -31,6 +30,23 @@ var custom = {
     }
 };
 Inspector.Validation.extend(custom);
+
+custom = {
+    mustIncludeOneOnly: function (schema, candidate) {
+        var mustIncludeOneOnly = schema.$mustIncludeOneOnly.params;
+        var occurrenceCounter = 0;
+        for (var index = 0; index < mustIncludeOneOnly.length; index++) {
+            if (candidate[mustIncludeOneOnly[index]]) {
+                occurrenceCounter++;
+            }
+        }
+        if (occurrenceCounter != 1) {
+            this.report('One and only one of the following must be present: ' + JSON.stringify(mustIncludeOneOnly));
+        }
+    }
+};
+Inspector.Validation.extend(custom);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -58,6 +74,9 @@ var partnerValidator = function (configs) {
                         $impliesPresence : {
                             if: "placementKey",
                             then: "publisherId"
+                        },
+                        $mustIncludeOneOnly : {
+                            perams: ["placementId", "placementKey"]
                         },
                         properties: {
                             currency: {
