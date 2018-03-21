@@ -50,14 +50,18 @@ function generateReturnParcels(profile, partnerConfig) {
     for (var htSlotName in partnerConfig.mapping) {
         if (partnerConfig.mapping.hasOwnProperty(htSlotName)) {
             var xSlotsArray = partnerConfig.mapping[htSlotName];
+            var htSlot = {
+                id: htSlotName,
+                getId: function () {
+                    return this.id;
+                }
+            }
             for (var i = 0; i < xSlotsArray.length; i++) {
                 var getId = createGetIdFunc(htSlotName);
                 var xSlotName = xSlotsArray[i];
                 returnParcels.push({
                     partnerId: profile.partnerId,
-                    htSlot: {
-                        getId: getId
-                    },
+                    htSlot: htSlot,
                     ref: "",
                     xSlotRef: partnerConfig.xSlots[xSlotName],
                     requestId: '_' + getRandomId()
@@ -82,8 +86,14 @@ describe('parseResponse', function () {
     var libraryStubData = require('./support/libraryStubData.js');
     var partnerModule = proxyquire('../improve-digital-htb.js', libraryStubData);
     var partnerConfig = require('./support/mockPartnerConfig.json');
-    var responseData = require('./support/mockResponseData.json');
-    var expect = require('chai').expect;
+    var fs = require('fs');
+    var parseJson = require('parse-json');
+    var path = require('path');
+    var chai = require('chai');
+    var sinon = require('sinon');
+    var sinonChai = require("sinon-chai");
+    var expect = chai.expect;
+    chai.use(sinonChai);
     /* -------------------------------------------------------------------- */
 
     /* Instantiate your partner module */
@@ -91,38 +101,55 @@ describe('parseResponse', function () {
     var partnerProfile = partnerModule.profile;
 
     /* Generate dummy return parcels based on MRA partner profile */
-    var returnParcels;
-    var result, expectedValue, mockData, returnParcels;
+    var registerAd;
+	var returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
+	var responseData = JSON.parse(fs.readFileSync(path.join(__dirname, './support/mockResponseData.json')));
+	var mockData = responseData.bid;
+	var expectSpy = sinon.spy(chai, 'expect');
 
     describe('should correctly parse bids:', function () {
-        /* Simple type checking on the returned objects, should always pass */
-        //it('each parcel should have the required fields set', function () {
-            returnParcels = generateReturnParcels(partnerModule.profile, partnerConfig);
+		
+        mockData = responseData.bid;
 
-            /* Get mock response data from our responseData file */
-            mockData = responseData.bid;
-            var expectedResults = responseData.results;
+        beforeEach(function () {
+            /* spy on RenderService.registerAd function, so that we can test it is called */
+            registerAd = sinon.spy(libraryStubData["space-camp.js"].services.RenderService, 'registerAd');			
+        });
 
-            for (var i = 0; i < mockData.length; i++) {
-                /* IF MRA, parse one parcel at a time */
-                if (!partnerProfile.architecture) partnerModule.parseResponse(1, mockData[i], [returnParcels[i]]); {
-                    var requestId = returnParcels[i].requestId;
-                    expect(isEmpty(responseData.results[i]), "expected results cannot be empty").to.be.false;
-                    it('Parcel for request id ' + requestId + ' should have the required fields set', function () {
-                        for (var responseAttr in responseData.results[i]) {
-                            if (responseAttr === "targeting") {
-                                expect(responseData.results[i][responseAttr].ix_imdi_dealid, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_dealid should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_dealid) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_dealid).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_dealid);
-                                expect(responseData.results[i][responseAttr].ix_imdi_cpm, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_cpm should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_cpm) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_cpm).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_cpm);
-                                expect(responseData.results[i][responseAttr].ix_imdi_id, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_id should be " + JSON.stringify(returnParcels[i][responseAttr].ix_imdi_id) + ".  Instead it is " + responseData.results[i][responseAttr].ix_imdi_id).to.deep.equal(returnParcels[i][responseAttr].ix_imdi_id);
-                                expect(responseData.results[i][responseAttr].pubKitAdId, "(Request:" + requestId + ") Attribute " + responseAttr + ".pubKitAdId should be a string starting with an underscore.  Instead it is " + responseData.results[i][responseAttr].pubKitAdId).to.match(/^_[a-zA-Z0-9]+$/);
-                            } else {
-                                expect(returnParcels[i][responseAttr], "(Request:" + requestId + ") Required attribute " + responseAttr + " does not exist").to.exist;
-                                expect(responseData.results[i][responseAttr], "(Request:" + requestId + ") Attribute " + responseAttr + " should be " + JSON.stringify(responseData.results[i][responseAttr]) + ".  Instead it is " + responseData.results[i][responseAttr]).to.deep.equal(returnParcels[i][responseAttr]);
-                            }
-                        }
-                    });
-                }
-            }
-        //});
+        afterEach(function () {
+            registerAd.restore();
+        });
+		
+		for (var i = 0; i < mockData.length; i++) {
+			(function(counter) {
+				var expectedResults = responseData.results[counter];
+				var requestId = expectedResults.requestId;
+				it("Check response for slot " + requestId, function() {
+					partnerModule.parseResponse(1, mockData[counter], returnParcels);
+					if (expectedResults.pass === false) {
+						chai.expect(registerAd.callCount).to.equal(1);
+						var registerAdArgs = registerAd.getCalls()[0].args;
+						chai.expect(registerAdArgs.price).to.equal(mockData.price);
+						chai.expect(registerAdArgs.dealId).to.equal(mockData.placementId);
+					}
+					for (var responseAttr in expectedResults) {
+						if (responseAttr === "targeting") {
+							chai.expect(expectedResults[responseAttr].ix_imdi_dealid, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_dealid should be " + JSON.stringify(returnParcels[counter][responseAttr].ix_imdi_dealid) + ".  Instead it is " + JSON.stringify(expectedResults[responseAttr].ix_imdi_dealid)).to.deep.equal(returnParcels[counter][responseAttr].ix_imdi_dealid);
+							chai.expect(expectedResults[responseAttr].ix_imdi_cpm, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_cpm should be " + JSON.stringify(returnParcels[counter][responseAttr].ix_imdi_cpm) + ".  Instead it is " + expectedResults[responseAttr].ix_imdi_cpm).to.deep.equal(returnParcels[counter][responseAttr].ix_imdi_cpm);
+							chai.expect(expectedResults[responseAttr].ix_imdi_id, "(Request:" + requestId + ") Attribute " + responseAttr + ".ix_imdi_id should be " + JSON.stringify(returnParcels[counter][responseAttr].ix_imdi_id) + ".  Instead it is " + expectedResults[responseAttr].ix_imdi_id).to.deep.equal(returnParcels[counter][responseAttr].ix_imdi_id);
+							chai.expect(expectedResults[responseAttr].pubKitAdId, "(Request:" + requestId + ") Attribute " + responseAttr + ".pubKitAdId should be a string starting with an underscore.  Instead it is " + expectedResults[responseAttr].pubKitAdId).to.match(/^_[a-zA-Z0-9]+$/);
+						} else {
+							chai.expect(returnParcels[counter][responseAttr], "(Request:" + requestId + ") Required attribute " + responseAttr + " does not exist").to.exist;
+							chai.expect(expectedResults[responseAttr], "(Request:" + requestId + ") Attribute " + responseAttr + " should be " + JSON.stringify(expectedResults[responseAttr]) + ".  Instead it is " + responseData.results[counter][responseAttr]).to.deep.equal(returnParcels[counter][responseAttr]);
+						}
+					}
+				});
+			})(i);
+		};
+		
+		after(function () {
+			expectSpy.restore();
+			chai.expect(expectSpy.callCount).to.equal(66);
+		})
     });
 });
