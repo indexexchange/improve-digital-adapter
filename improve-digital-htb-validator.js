@@ -79,9 +79,14 @@ var partnerValidator = function (configs) {
                             perams: ["placementId", "placementKey"]
                         },
                         properties: {
+                            currency: {
+                                type: 'string',
+                                optional: true,
+                                pattern: /^USD|EUR|GBP|AUD|DKK|SEK|CZK|CHF|NOK$/
+                            },
                             placementId: {
                                 type: 'number',
-                                optional: true,
+                                optional: true
                             },
                             size:{
                                 type: 'object',
