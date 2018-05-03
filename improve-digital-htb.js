@@ -64,7 +64,7 @@ function ImproveDigitalHtb(configs) {
      * @private {object}
      */
     var __profile;
-	
+
     /**
      * Instance of Improve Digital Ad Server JS Client
      *
@@ -266,14 +266,14 @@ function ImproveDigitalHtb(configs) {
             headerStatsInfo[htSlotId][curReturnParcel.requestId] = [curReturnParcel.xSlotName];
 
             var curBid = null;
-			
-			if (curReturnParcel.requestId === adResponse.id) {
-				if(adResponse.bid && adResponse.bid.length) {
-					curBid = adResponse.bid[0];
-				}
-			} else {
-				continue;
-			}
+      
+            if (curReturnParcel.requestId === adResponse.id) {
+                if(adResponse.bid && adResponse.bid.length) {
+                    curBid = adResponse.bid[0];
+                }
+            } else {
+                continue;
+            }
             
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
 
@@ -281,32 +281,32 @@ function ImproveDigitalHtb(configs) {
              * these local variables */
 
             /* the bid price for the given slot */
-			var bidPrice;
-			var bidIsPass;
-			if (typeof curBid.price === 'undefined' || curBid.price === 0) {
-				bidPrice = 0;
-				bidIsPass = true;
-			} else {
+            var bidPrice;
+            var bidIsPass;
+            if (typeof curBid.price === 'undefined' || curBid.price === 0) {
+                bidPrice = 0;
+                bidIsPass = true;
+            } else {
                 bidPrice = curBid.price * 100;
-				bidIsPass = false;
-			}
+                bidIsPass = false;
+            }
 
             /* the size of the given slot */
             var bidSize = [curBid.w, curBid.h];
 
             /* OPTIONAL: tracking pixel url to be fired AFTER rendering a winning creative.
-            * If firing a tracking pixel is not required or the pixel url is part of the adm,
-            * leave empty;
-            */
+             * If firing a tracking pixel is not required or the pixel url is part of the adm,
+             * leave empty;
+             */
             var pixelUrl = '';
-			
+      
             var bidCreative = '';
-			var bidDealId;
+            var bidDealId;
             if (curBid.adm) {
                 var syncString = "";
                 var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
 
-  			    for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
+                for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
                     syncString += (syncString === "") ? "document.writeln(\"" : "";
                     var syncInd = syncArray[syncCounter];
                     syncInd = syncInd.replace(/\//g, '\\\/');
@@ -323,10 +323,10 @@ function ImproveDigitalHtb(configs) {
             } else {
                 bidIsPass = true;
             }
-			
+      
             /* ---------------------------------------------------------------------------------------*/
-			
-			curReturnParcel.pass = bidIsPass;
+      
+            curReturnParcel.pass = bidIsPass;
             if (bidIsPass) {
                 //? if (DEBUG) {
                 Scribe.info(__profile.partnerId + ' returned pass for { id: ' + adResponse.id + ' }.');
@@ -387,9 +387,9 @@ function ImproveDigitalHtb(configs) {
             //? if (FEATURES.INTERNAL_RENDER) {
             curReturnParcel.targeting.pubKitAdId = pubKitAdId;
             //? }
-			if (curBid) {
-				break;
-			}
+            if (curBid) {
+                break;
+            }
         }
     }
 
@@ -434,7 +434,7 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-			bidUnitInCents: 1,
+      bidUnitInCents: 1,
             lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
             callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
