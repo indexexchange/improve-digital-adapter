@@ -116,6 +116,11 @@ describe('parseResponse', function () {
             registerAd = sinon.spy(libraryStubData["space-camp.js"].services.RenderService, 'registerAd');
         });
 
+        afterAll(function () {
+            expectSpy.restore();
+            chai.expect(expectSpy.callCount).to.equal(66);
+        });
+
         afterEach(function () {
             registerAd.restore();
         });
@@ -146,10 +151,5 @@ describe('parseResponse', function () {
                 });
             })(i);
         };
-
-        after(function () {
-            expectSpy.restore();
-            chai.expect(expectSpy.callCount).to.equal(66);
-        })
     });
 });
