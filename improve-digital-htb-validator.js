@@ -30,10 +30,6 @@ var custom = {
     }
 };
 Inspector.Validation.extend(custom);
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> Add validator for inclusion of placementKey or placementId
 
 custom = {
     mustIncludeOneOnly: function (schema, candidate) {
@@ -51,11 +47,6 @@ custom = {
 };
 Inspector.Validation.extend(custom);
 
-<<<<<<< HEAD
-=======
->>>>>>> Add check for presence of publisherId if placementKey is used
-=======
->>>>>>> Add validator for inclusion of placementKey or placementId
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -84,18 +75,9 @@ var partnerValidator = function (configs) {
                             if: "placementKey",
                             then: "publisherId"
                         },
-<<<<<<< HEAD
-<<<<<<< HEAD
                         $mustIncludeOneOnly : {
                             params: ["placementId", "placementKey"]
                         },
-=======
->>>>>>> Add check for presence of publisherId if placementKey is used
-=======
-                        $mustIncludeOneOnly : {
-                            perams: ["placementId", "placementKey"]
-                        },
->>>>>>> Add validator for inclusion of placementKey or placementId
                         properties: {
                             currency: {
                                 type: 'string',

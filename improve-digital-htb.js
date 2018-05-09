@@ -66,25 +66,11 @@ function ImproveDigitalHtb(configs) {
     var __profile;
 
     /**
-     * Instances of BidTransformer for transforming bids.
-     *
-     * @private {object}
-     */
-    var __bidTransformers;
-
-    /**
      * Instance of Improve Digital Ad Server JS Client
      *
      * @private {object}
      */
     var __adServerClient = new ImproveDigitalAdServerJSClient();
-
-    /**
-     * Version of Improve Digital Index Exchange Adapter
-     *
-     * @private {object}
-     */
-    var __version = "0.0.1";
 
     /* =====================================
      * Functions
@@ -168,9 +154,9 @@ function ImproveDigitalHtb(configs) {
         if(returnParcels && returnParcels.length) {
             var requestParameters = {
                 returnObjType: __adServerClient.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT,
-                libVersion: __version,
+                libVersion: 'IX-' + __profile.version,
                 requestId: callbackId,
-                callback: SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
+                callback: 'window.' + SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
             };
             requestParameters.singleRequestMode = false;
 
@@ -250,7 +236,6 @@ function ImproveDigitalHtb(configs) {
      */
     function __parseResponse(sessionId, adResponse, returnParcels) {
 
-
         /* =============================================================================
          * STEP 4  | Parse & store demand response
          * -----------------------------------------------------------------------------
@@ -271,10 +256,6 @@ function ImproveDigitalHtb(configs) {
          */
 
         /* ---------- Process adResponse and extract the bids into the bids array ------------*/
-
-        var bids = adResponse.bid;
-
-        /* --------------------------------------------------------------------------------- */
         for (var j = 0; j < returnParcels.length; j++) {
 
             var curReturnParcel = returnParcels[j];
@@ -284,58 +265,47 @@ function ImproveDigitalHtb(configs) {
             headerStatsInfo[htSlotId] = {};
             headerStatsInfo[htSlotId][curReturnParcel.requestId] = [curReturnParcel.xSlotName];
 
-            var curBid;
-
-            for (var i = 0; i < bids.length; i++) {
-
-                /**
-                 * This section maps internal returnParcels and demand returned from the bid request.
-                 * In order to match them correctly, they must be matched via some criteria. This
-                 * is usually some sort of placements or inventory codes. Please replace the someCriteria
-                 * key to a key that represents the placement in the configuration and in the bid responses.
-                 */
-
-                if (curReturnParcel.requestId === bids[i].id) {
-                    curBid = bids[i];
-                    bids.splice(i, 1);
-                    break;
+            var curBid = null;
+      
+            if (curReturnParcel.requestId === adResponse.id) {
+                if(adResponse.bid && adResponse.bid.length) {
+                    curBid = adResponse.bid[0];
                 }
-            }
-
-            /* No matching bid found so its a pass */
-            if (!curBid || typeof curBid.price === 'undefined' || curBid.price === 0) {
-                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
-                    __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
-                }
-                curReturnParcel.pass = true;
+            } else {
                 continue;
             }
-
+            
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
 
             /* Using the above variable, curBid, extract various information about the bid and assign it to
              * these local variables */
 
             /* the bid price for the given slot */
-            var bidPrice = curBid.price;
+            var bidPrice;
+            var bidIsPass;
+            if (typeof curBid.price === 'undefined' || curBid.price === 0) {
+                bidPrice = 0;
+                bidIsPass = true;
+            } else {
+                bidPrice = curBid.price * 100;
+                bidIsPass = false;
+            }
 
             /* the size of the given slot */
-            var bidSize = [Number(curBid.width), Number(curBid.height)];
+            var bidSize = [curBid.w, curBid.h];
 
-            /* the creative/adm for the given slot that will be rendered if is the winner.
-             * Please make sure the URL is decoded and ready to be document.written.
+            /* OPTIONAL: tracking pixel url to be fired AFTER rendering a winning creative.
+             * If firing a tracking pixel is not required or the pixel url is part of the adm,
+             * leave empty;
              */
-            var bidCreative = curBid.adm;
-
-            var bidPrice = curBid.price * 100; /* the bid price for the given slot */
-            var bidSize = [curBid.w, curBid.h]; /* the size of the given slot */
-
-            var syncString = "";
-            var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
-
-            var bidCreative;
             var pixelUrl = '';
+      
+            var bidCreative = '';
+            var bidDealId;
             if (curBid.adm) {
+                var syncString = "";
+                var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
+
                 for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
                     syncString += (syncString === "") ? "document.writeln(\"" : "";
                     var syncInd = syncArray[syncCounter];
@@ -348,18 +318,15 @@ function ImproveDigitalHtb(configs) {
                 if (curBid.nurl && curBid.nurl.length > 0) {
                     nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
                 }
-                var bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
-                var bidDealId = curBid.pid;
+                bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
+                bidDealId = curBid.pid;
             } else {
-                if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
-                    __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
-                }
-                curReturnParcel.pass = true;
-                continue;
+                bidIsPass = true;
             }
-
+      
             /* ---------------------------------------------------------------------------------------*/
-
+      
+            curReturnParcel.pass = bidIsPass;
             if (bidIsPass) {
                 //? if (DEBUG) {
                 Scribe.info(__profile.partnerId + ' returned pass for { id: ' + adResponse.id + ' }.');
@@ -367,11 +334,10 @@ function ImproveDigitalHtb(configs) {
                 if (__profile.enabledAnalytics.requestTime) {
                     __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
                 }
-                curReturnParcel.pass = true;
                 continue;
             }
 
-            if (__profile.enabledAnalytics.requestTime && __baseClass._emitStatsEvent) {
+            if (__profile.enabledAnalytics.requestTime) {
                 __baseClass._emitStatsEvent(sessionId, 'hs_slot_bid', headerStatsInfo);
             }
 
@@ -421,6 +387,9 @@ function ImproveDigitalHtb(configs) {
             //? if (FEATURES.INTERNAL_RENDER) {
             curReturnParcel.targeting.pubKitAdId = pubKitAdId;
             //? }
+            if (curBid) {
+                break;
+            }
         }
     }
 
@@ -465,10 +434,7 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-<<<<<<< HEAD
-            bidUnitInCents: 1, // The bid price unit (in cents) the endpoint returns, please refer to the readme for details
-=======
->>>>>>> Misc fixes
+      bidUnitInCents: 1,
             lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
             callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
@@ -484,63 +450,6 @@ function ImproveDigitalHtb(configs) {
         }
         //? }
 
-<<<<<<< HEAD
-=======
-        /*
-         * Adjust the below bidTransformerConfigs variable to match the units the adapter
-         * sends bids in and to match line item setup. This configuration variable will
-         * be used to transform the bids going into DFP.
-         */
-
-        /* - Please fill out this bid trasnformer according to your module's bid response format - */
-        var bidTransformerConfigs = {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            targeting: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 2, // With 2 decimal places
-                roundingType: 'FLOOR', // jshint ignore:line
-                floor: 0,
-                buckets: [{
-                    max: 2000, // Up to 20 dollar (above 5 cents)
-                    step: 5 // use 5 cent increments
-                }, {
-                    max: 5000, // Up to 50 dollars (above 20 dollars)
-                    step: 100 // use 1 dollar increments
-                }]
-            },
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            price: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 2, // With 2 decimal places
-                roundingType: 'NONE',
-            },
-            //? }
-        };
-
-        /* --------------------------------------------------------------------------------------- */
-
-        if (configs.bidTransformer) {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            bidTransformerConfigs.targeting = configs.bidTransformer;
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            bidTransformerConfigs.price.inputCentsMultiplier = configs.bidTransformer.inputCentsMultiplier;
-            //? }
-        }
-
-        __bidTransformers = {};
-
-        //? if (FEATURES.GPT_LINE_ITEMS) {
-        __bidTransformers.targeting = BidTransformer(bidTransformerConfigs.targeting);
-        //? }
-        //? if (FEATURES.RETURN_PRICE) {
-        __bidTransformers.price = BidTransformer(bidTransformerConfigs.price);
-        //? }
-
->>>>>>> Misc fixes
         __baseClass = Partner(__profile, configs, null, {
             parseResponse: __parseResponse,
             generateRequestObj: __generateRequestObj,
@@ -813,3 +722,4 @@ function ImproveDigitalAdServerJSClient(endPoint) {
 }
 
 exports.ImproveDigitalAdServerJSClient = ImproveDigitalAdServerJSClient;
+
