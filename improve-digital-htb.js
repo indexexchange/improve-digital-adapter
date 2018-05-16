@@ -15,8 +15,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Dependencies ////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-var BidTransformer = require('bid-transformer.js');
 var Browser = require('browser.js');
 var Classify = require('classify.js');
 var Constants = require('constants.js');
@@ -24,6 +22,7 @@ var Partner = require('partner.js');
 var Size = require('size.js');
 var SpaceCamp = require('space-camp.js');
 var System = require('system.js');
+var Network = require('network.js');
 var Utilities = require('utilities.js');
 var EventsService;
 var RenderService;
@@ -67,11 +66,11 @@ function ImproveDigitalHtb(configs) {
     var __profile;
 
     /**
-     * Instances of BidTransformer for transforming bids.
+     * Instance of Improve Digital Ad Server JS Client
      *
      * @private {object}
      */
-    var __bidTransformers;
+    var __adServerClient = new ImproveDigitalAdServerJSClient();
 
     /* =====================================
      * Functions
@@ -89,7 +88,6 @@ function ImproveDigitalHtb(configs) {
      * @return {object}
      */
     function __generateRequestObj(returnParcels) {
-
         /* =============================================================================
          * STEP 2  | Generate Request URL
          * -----------------------------------------------------------------------------
@@ -151,19 +149,37 @@ function ImproveDigitalHtb(configs) {
         var queryObj = {};
         var callbackId = System.generateUniqueId();
 
-        /* Change this to your bidder endpoint.*/
-        var baseUrl = Browser.getProtocol() + '//someAdapterEndpoint.com/bid';
+        var requestObject = {};
 
-        /* ---------------- Craft bid request using the above returnParcels --------- */
+        if(returnParcels && returnParcels.length) {
+            var requestParameters = {
+                returnObjType: __adServerClient.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT,
+                libVersion: 'IX-' + __profile.version,
+                requestId: callbackId,
+                callback: 'window.' + SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
+            };
+            requestParameters.singleRequestMode = false;
 
-
-        /* -------------------------------------------------------------------------- */
-
-        return {
-            url: baseUrl,
-            data: queryObj,
-            callbackId: callbackId
-        };
+            var protocol = Browser.getProtocol();
+            requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
+            var requestObject = [];
+            for (var parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
+                var parcel = returnParcels[parcelCounter];
+                if (parcel) {
+                    // The client needs an adUnitId.  The htSlot Id is guaranteed to be unique for the page
+                    var xSlotCopy = JSON.parse(JSON.stringify(parcel.xSlotRef));
+                    xSlotCopy.adUnitId = parcel.htSlot.getId();
+                    xSlotCopy.id = parcel.requestId;
+                    requestObject.push(xSlotCopy);
+                }
+            }
+            var request = __adServerClient.createRequest(requestObject, requestParameters);
+            if (request && request.requests && request.requests[0] && request.requests[0].url) {
+                queryObj.url = request.requests[0].url;
+                queryObj.callbackId = callbackId;
+            }
+        }
+        return queryObj;
     }
 
     /* =============================================================================
@@ -179,8 +195,7 @@ function ImproveDigitalHtb(configs) {
      */
     function adResponseCallback(adResponse) {
         /* get callbackId from adResponse here */
-        var callbackId = 0;
-        __baseClass._adResponseStore[callbackId] = adResponse;
+        __baseClass._adResponseStore[adResponse.id] = adResponse;
     }
     /* -------------------------------------------------------------------------- */
 
@@ -188,17 +203,22 @@ function ImproveDigitalHtb(configs) {
      * ---------------------------------- */
 
     /* =============================================================================
-     * STEP 5  | Rendering
+     * STEP 5  | Rendering Pixel
      * -----------------------------------------------------------------------------
      *
-     * This function will render the ad given. Usually need not be changed unless
-     * special render functionality is needed.
-     *
-     * @param  {Object} doc The document of the iframe where the ad will go.
-     * @param  {string} adm The ad code that came with the original demand.
+    */
+
+     /**
+     * This function will render the pixel given.
+     * @param  {string} pixelUrl Tracking pixel img url.
      */
-    function __render(doc, adm) {
-        System.documentWrite(doc, adm);
+    function __renderPixel(pixelUrl) {
+        if (pixelUrl){
+            Network.img({
+                url: decodeURIComponent(pixelUrl),
+                method: 'GET',
+            });
+        }
     }
 
     /**
@@ -215,8 +235,6 @@ function ImproveDigitalHtb(configs) {
      * attached to each one of the objects for which the demand was originally requested for.
      */
     function __parseResponse(sessionId, adResponse, returnParcels) {
-
-        var unusedReturnParcels = returnParcels.slice();
 
         /* =============================================================================
          * STEP 4  | Parse & store demand response
@@ -237,58 +255,87 @@ function ImproveDigitalHtb(configs) {
          *
          */
 
-         /* ---------- Process adResponse and extract the bids into the bids array ------------*/
-
-        var bids = adResponse;
-
-        /* --------------------------------------------------------------------------------- */
-
+        /* ---------- Process adResponse and extract the bids into the bids array ------------*/
         for (var j = 0; j < returnParcels.length; j++) {
+
             var curReturnParcel = returnParcels[j];
 
-            /* ----------- Fill this out to find a matching bid for the current parcel ------------- */
-            var curBid;
+            var headerStatsInfo = {};
+            var htSlotId = curReturnParcel.htSlot.getId();
+            headerStatsInfo[htSlotId] = {};
+            headerStatsInfo[htSlotId][curReturnParcel.requestId] = [curReturnParcel.xSlotName];
 
-            for (var i = 0; i < bids.length; i++) {
-
-                /**
-                 * This section maps internal returnParcels and demand returned from the bid request.
-                 * In order to match them correctly, they must be matched via some criteria. This
-                 * is usually some sort of placements or inventory codes. Please replace the someCriteria
-                 * key to a key that represents the placement in the configuration and in the bid responses.
-                 */
-
-                if (curReturnParcel.xSlotRef.someCriteria === bids[i].someCriteria) {
-                    curBid = bids[i];
-                    break;
+            var curBid = null;
+      
+            if (curReturnParcel.requestId === adResponse.id) {
+                if(adResponse.bid && adResponse.bid.length) {
+                    curBid = adResponse.bid[0];
                 }
+            } else {
+                continue;
+            }
+            
+            /* ---------- Fill the bid variables with data from the bid response here. ------------*/
+
+            /* Using the above variable, curBid, extract various information about the bid and assign it to
+             * these local variables */
+
+            /* the bid price for the given slot */
+            var bidPrice;
+            var bidIsPass;
+            if (typeof curBid.price === 'undefined' || curBid.price === 0) {
+                bidPrice = 0;
+                bidIsPass = true;
+            } else {
+                bidPrice = curBid.price * 100;
+                bidIsPass = false;
             }
 
-            /* ------------------------------------------------------------------------------------*/
+            /* the size of the given slot */
+            var bidSize = [curBid.w, curBid.h];
 
-            /* HeaderStats information */
-            var headerStatsInfo = {};
-            headerStatsInfo[curReturnParcel.htSlot.getId()] = [curReturnParcel.xSlotName];
+            /* OPTIONAL: tracking pixel url to be fired AFTER rendering a winning creative.
+             * If firing a tracking pixel is not required or the pixel url is part of the adm,
+             * leave empty;
+             */
+            var pixelUrl = '';
+      
+            var bidCreative = '';
+            var bidDealId;
+            if (curBid.adm) {
+                var syncString = "";
+                var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
 
-            /* No matching bid found so its a pass */
-            if (!curBid) {
+                for (var syncCounter = 0; syncCounter < syncArray.length; syncCounter++) {
+                    syncString += (syncString === "") ? "document.writeln(\"" : "";
+                    var syncInd = syncArray[syncCounter];
+                    syncInd = syncInd.replace(/\//g, '\\\/');
+                    syncString += "<img src=\\\"" + syncInd + "\\\"\/>";
+                }
+                syncString += (syncString === "") ? "" : "\")";
+
+                var nurl = "";
+                if (curBid.nurl && curBid.nurl.length > 0) {
+                    nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
+                }
+                bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
+                bidDealId = curBid.pid;
+            } else {
+                bidIsPass = true;
+            }
+      
+            /* ---------------------------------------------------------------------------------------*/
+      
+            curReturnParcel.pass = bidIsPass;
+            if (bidIsPass) {
+                //? if (DEBUG) {
+                Scribe.info(__profile.partnerId + ' returned pass for { id: ' + adResponse.id + ' }.');
+                //? }
                 if (__profile.enabledAnalytics.requestTime) {
                     __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
                 }
-                curReturnParcel.pass = true;
                 continue;
             }
-
-            /* ---------- Fill the bid variables with data from the bid response here. ------------*/
-            /* Using the above variable, curBid, extract various information about the bid and assign it to
-            * these local variables */
-
-            var bidPrice = curBid.price; /* the bid price for the given slot */
-            var bidSize = [curBid.width, curBid.height]; /* the size of the given slot */
-            var bidCreative = curBid.adm; /* the creative/adm for the given slot that will be rendered if is the winner. */
-            var bidDealId = curBid.dealid; /* the dealId if applicable for this slot. */
-
-            /* ---------------------------------------------------------------------------------------*/
 
             if (__profile.enabledAnalytics.requestTime) {
                 __baseClass._emitStatsEvent(sessionId, 'hs_slot_bid', headerStatsInfo);
@@ -298,8 +345,10 @@ function ImproveDigitalHtb(configs) {
             curReturnParcel.targetingType = 'slot';
             curReturnParcel.targeting = {};
 
+            var targetingCpm = '';
+
             //? if (FEATURES.GPT_LINE_ITEMS) {
-            var targetingCpm = __bidTransformers.targeting.apply(bidPrice);
+            targetingCpm = __baseClass._bidTransformers.targeting.apply(bidPrice);
             var sizeKey = Size.arrayToString(curReturnParcel.size);
 
             if (bidDealId) {
@@ -309,47 +358,38 @@ function ImproveDigitalHtb(configs) {
                 curReturnParcel.targeting[__baseClass._configs.targetingKeys.om] = [sizeKey + '_' + targetingCpm];
             }
             curReturnParcel.targeting[__baseClass._configs.targetingKeys.id] = [curReturnParcel.requestId];
-
-            if (__baseClass._configs.lineItemType === Constants.LineItemTypes.ID_AND_SIZE) {
-                RenderService.registerAdByIdAndSize(
-                    sessionId,
-                    __profile.partnerId,
-                    __render, [bidCreative],
-                    '',
-                    __profile.features.demandExpiry.enabled ? (__profile.features.demandExpiry.value + System.now()) : 0,
-                    curReturnParcel.requestId, bidSize
-                );
-            } else if (__baseClass._configs.lineItemType === Constants.LineItemTypes.ID_AND_PRICE) {
-                RenderService.registerAdByIdAndPrice(
-                    sessionId,
-                    __profile.partnerId,
-                    __render, [bidCreative],
-                    '',
-                    __profile.features.demandExpiry.enabled ? (__profile.features.demandExpiry.value + System.now()) : 0,
-                    curReturnParcel.requestId,
-                    targetingCpm
-                );
-            }
             //? }
 
             //? if (FEATURES.RETURN_CREATIVE) {
             curReturnParcel.adm = bidCreative;
+            if (pixelUrl) {
+                curReturnParcel.winNotice = __renderPixel.bind(null, pixelUrl);
+            }
             //? }
 
             //? if (FEATURES.RETURN_PRICE) {
-            curReturnParcel.price = Number(__bidTransformers.price.apply(bidPrice));
+            curReturnParcel.price = Number(__baseClass._bidTransformers.price.apply(bidPrice));
             //? }
 
+            var pubKitAdId = RenderService.registerAd({
+                sessionId: sessionId,
+                partnerId: __profile.partnerId,
+                adm: bidCreative,
+                requestId: curReturnParcel.requestId,
+                size: curReturnParcel.size,
+                price: targetingCpm,
+                dealId: bidDealId || undefined,
+                timeOfExpiry: __profile.features.demandExpiry.enabled ? (__profile.features.demandExpiry.value + System.now()) : 0,
+                auxFn: __renderPixel,
+                auxArgs: [pixelUrl]
+            });
+
             //? if (FEATURES.INTERNAL_RENDER) {
-            var pubKitAdId = RenderService.registerAd(
-                sessionId,
-                __profile.partnerId,
-                __render, [bidCreative],
-                '',
-                __profile.features.demandExpiry.enabled ? (__profile.features.demandExpiry.value + System.now()) : 0
-            );
             curReturnParcel.targeting.pubKitAdId = pubKitAdId;
             //? }
+            if (curBid) {
+                break;
+            }
         }
     }
 
@@ -373,7 +413,7 @@ function ImproveDigitalHtb(configs) {
             partnerId: 'ImproveDigitalHtb', // PartnerName
             namespace: 'ImproveDigitalHtb', // Should be same as partnerName
             statsId: 'IMDI', // Unique partner identifier
-            version: '2.0.0',
+            version: '2.1.1',
             targetingType: 'slot',
             enabledAnalytics: {
                 requestTime: true
@@ -394,10 +434,11 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-            lineItemType: Constants.LineItemTypes.ID_AND_SIZE,
-            callbackType: Partner.CallbackTypes.ID, // Callback type, please refer to the readme for details
-            architecture: Partner.Architectures.SRA, // Request architecture, please refer to the readme for details
-            requestType: Partner.RequestTypes.ANY // Request type, jsonp, ajax, or any.
+      bidUnitInCents: 1,
+            lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
+            callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
+            architecture: Partner.Architectures.MRA, // Multi-request Architecture
+            requestType: Partner.RequestTypes.JSONP // Use only JSONP for bid requests
         };
         /* ---------------------------------------------------------------------------------------*/
 
@@ -407,60 +448,6 @@ function ImproveDigitalHtb(configs) {
         if (results) {
             throw Whoopsie('INVALID_CONFIG', results);
         }
-        //? }
-
-        /*
-         * Adjust the below bidTransformerConfigs variable to match the units the adapter
-         * sends bids in and to match line item setup. This configuration variable will
-         * be used to transform the bids going into DFP.
-         */
-
-        /* - Please fill out this bid trasnformer according to your module's bid response format - */
-        var bidTransformerConfigs = {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            targeting: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 0, // With 0 decimal places
-                roundingType: 'FLOOR', // jshint ignore:line
-                floor: 0,
-                buckets: [{
-                    max: 2000, // Up to 20 dollar (above 5 cents)
-                    step: 5 // use 5 cent increments
-                }, {
-                    max: 5000, // Up to 50 dollars (above 20 dollars)
-                    step: 100 // use 1 dollar increments
-                }]
-            },
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            price: {
-                inputCentsMultiplier: 1, // Input is in cents
-                outputCentsDivisor: 1, // Output as cents
-                outputPrecision: 0, // With 0 decimal places
-                roundingType: 'NONE',
-            },
-            //? }
-        };
-
-        /* --------------------------------------------------------------------------------------- */
-
-        if (configs.bidTransformer) {
-            //? if (FEATURES.GPT_LINE_ITEMS) {
-            bidTransformerConfigs.targeting = configs.bidTransformer;
-            //? }
-            //? if (FEATURES.RETURN_PRICE) {
-            bidTransformerConfigs.price.inputCentsMultiplier = configs.bidTransformer.inputCentsMultiplier;
-            //? }
-        }
-
-        __bidTransformers = {};
-
-        //? if (FEATURES.GPT_LINE_ITEMS) {
-        __bidTransformers.targeting = BidTransformer(bidTransformerConfigs.targeting);
-        //? }
-        //? if (FEATURES.RETURN_PRICE) {
-        __bidTransformers.price = BidTransformer(bidTransformerConfigs.price);
         //? }
 
         __baseClass = Partner(__profile, configs, null, {
@@ -497,7 +484,6 @@ function ImproveDigitalHtb(configs) {
          * ---------------------------------- */
 
         //? if (TEST) {
-        render: __render,
         parseResponse: __parseResponse,
         generateRequestObj: __generateRequestObj,
         adResponseCallback: adResponseCallback,
@@ -512,3 +498,228 @@ function ImproveDigitalHtb(configs) {
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = ImproveDigitalHtb;
+
+'use strict';
+
+function ImproveDigitalAdServerJSClient(endPoint) {
+  this.CONSTANTS = {
+    HTTP_SECURITY: {
+      STANDARD: 0,
+      SECURE: 1
+    },
+    AD_SERVER_BASE_URL: 'ad.360yield.com',
+    END_POINT: endPoint || 'hb',
+    AD_SERVER_URL_PARAM: 'jsonp=',
+    CLIENT_VERSION: 'JS-5.0.0',
+    MAX_URL_LENGTH: 2083,
+    ERROR_CODES: {
+      MISSING_PLACEMENT_PARAMS: 2,
+      LIB_VERSION_MISSING: 3
+    },
+    RETURN_OBJ_TYPE: {
+      DEFAULT: 0,
+      URL_PARAMS_SPLIT: 1
+    }
+  };
+
+  this.getErrorReturn = function (errorCode) {
+    return {
+      idMappings: {},
+      requests: {},
+      'errorCode': errorCode
+    };
+  };
+
+  this.createRequest = function (requestObject, requestParameters, extraRequestParameters) {
+    if (!requestParameters.libVersion) {
+      return this.getErrorReturn(this.CONSTANTS.ERROR_CODES.LIB_VERSION_MISSING);
+    }
+
+    requestParameters.returnObjType = requestParameters.returnObjType || this.CONSTANTS.RETURN_OBJ_TYPE.DEFAULT;
+
+    var impressionObjects = [];
+    var impressionObject = void 0;
+    if (Utilities.isArray(requestObject)) {
+      for (var counter = 0; counter < requestObject.length; counter++) {
+        impressionObject = this.createImpressionObject(requestObject[counter]);
+        impressionObjects.push(impressionObject);
+      }
+    } else {
+      impressionObject = this.createImpressionObject(requestObject);
+      impressionObjects.push(impressionObject);
+    }
+
+    var returnIdMappings = true;
+    if (requestParameters.returnObjType === this.CONSTANTS.RETURN_OBJ_TYPE.URL_PARAMS_SPLIT) {
+      returnIdMappings = false;
+    }
+
+    var returnObject = {};
+    returnObject.requests = [];
+    if (returnIdMappings) {
+      returnObject.idMappings = [];
+    }
+    var errors = null;
+
+    var baseUrl = (requestParameters.secure === 1 ? 'https' : 'http') + '://' + this.CONSTANTS.AD_SERVER_BASE_URL + '/' + this.CONSTANTS.END_POINT + '?' + this.CONSTANTS.AD_SERVER_URL_PARAM;
+
+    var bidRequestObject = {
+      bid_request: this.createBasicBidRequestObject(requestParameters, extraRequestParameters)
+    };
+    for (var _counter = 0; _counter < impressionObjects.length; _counter++) {
+      impressionObject = impressionObjects[_counter];
+
+      if (impressionObject.errorCode) {
+        errors = errors || [];
+        errors.push({
+          errorCode: impressionObject.errorCode,
+          adUnitId: impressionObject.adUnitId
+        });
+      } else {
+        if (returnIdMappings) {
+          returnObject.idMappings.push({
+            adUnitId: impressionObject.adUnitId,
+            id: impressionObject.impressionObject.id
+          });
+        }
+        bidRequestObject.bid_request.imp = bidRequestObject.bid_request.imp || [];
+        bidRequestObject.bid_request.imp.push(impressionObject.impressionObject);
+
+        var writeLongRequest = false;
+        var outputUri = baseUrl + encodeURIComponent(JSON.stringify(bidRequestObject));
+        if (outputUri.length > this.CONSTANTS.MAX_URL_LENGTH) {
+          writeLongRequest = true;
+          if (bidRequestObject.bid_request.imp.length > 1) {
+            // Pop the current request and process it again in the next iteration
+            bidRequestObject.bid_request.imp.pop();
+            if (returnIdMappings) {
+              returnObject.idMappings.pop();
+            }
+            _counter--;
+          }
+        }
+
+        if (writeLongRequest || !requestParameters.singleRequestMode || _counter === impressionObjects.length - 1) {
+          returnObject.requests.push(this.formatRequest(requestParameters, bidRequestObject));
+          bidRequestObject = {
+            bid_request: this.createBasicBidRequestObject(requestParameters, extraRequestParameters)
+          };
+        }
+      }
+    }
+
+    if (errors) {
+      returnObject.errors = errors;
+    }
+
+    return returnObject;
+  };
+
+  this.formatRequest = function (requestParameters, bidRequestObject) {
+    switch (requestParameters.returnObjType) {
+      case this.CONSTANTS.RETURN_OBJ_TYPE.URL_PARAMS_SPLIT:
+        return {
+          method: 'GET',
+          url: '//' + this.CONSTANTS.AD_SERVER_BASE_URL + '/' + this.CONSTANTS.END_POINT,
+          data: '' + this.CONSTANTS.AD_SERVER_URL_PARAM + JSON.stringify(bidRequestObject)
+        };
+      default:
+        var baseUrl = (requestParameters.secure === 1 ? 'https' : 'http') + '://' + (this.CONSTANTS.AD_SERVER_BASE_URL + '/') + (this.CONSTANTS.END_POINT + '?' + this.CONSTANTS.AD_SERVER_URL_PARAM);
+        return {
+          url: baseUrl + encodeURIComponent(JSON.stringify(bidRequestObject))
+        };
+    }
+  };
+
+  this.createBasicBidRequestObject = function (requestParameters, extraRequestParameters) {
+    var impressionBidRequestObject = {};
+    if (requestParameters.requestId) {
+      impressionBidRequestObject.id = requestParameters.requestId;
+    } else {
+      impressionBidRequestObject.id = System.generateUniqueId();
+    }
+    if (requestParameters.domain) {
+      impressionBidRequestObject.domain = requestParameters.domain;
+    }
+    if (requestParameters.page) {
+      impressionBidRequestObject.page = requestParameters.page;
+    }
+    if (requestParameters.ref) {
+      impressionBidRequestObject.ref = requestParameters.ref;
+    }
+    if (requestParameters.callback) {
+      impressionBidRequestObject.callback = requestParameters.callback;
+    }
+    if ('secure' in requestParameters) {
+      impressionBidRequestObject.secure = requestParameters.secure;
+    }
+    if (requestParameters.libVersion) {
+      impressionBidRequestObject.version = requestParameters.libVersion + '-' + this.CONSTANTS.CLIENT_VERSION;
+    }
+    if (requestParameters.referrer) {
+      impressionBidRequestObject.referrer = requestParameters.referrer;
+    }
+    if (extraRequestParameters) {
+      for (var prop in extraRequestParameters) {
+        impressionBidRequestObject[prop] = extraRequestParameters[prop];
+      }
+    }
+
+    return impressionBidRequestObject;
+  };
+
+  this.createImpressionObject = function (placementObject) {
+    var outputObject = {};
+    var impressionObject = {};
+    outputObject.impressionObject = impressionObject;
+
+    if (placementObject.id) {
+      impressionObject.id = placementObject.id;
+    } else {
+      impressionObject.id = System.generateUniqueId();
+    }
+    if (placementObject.adUnitId) {
+      outputObject.adUnitId = placementObject.adUnitId;
+    }
+    if (placementObject.currency) {
+      impressionObject.currency = placementObject.currency.toUpperCase();
+    }
+    if (placementObject.placementId) {
+      impressionObject.pid = placementObject.placementId;
+    }
+    if (placementObject.publisherId) {
+      impressionObject.pubid = placementObject.publisherId;
+    }
+    if (placementObject.placementKey) {
+      impressionObject.pkey = placementObject.placementKey;
+    }
+    if (placementObject.transactionId) {
+      impressionObject.tid = placementObject.transactionId;
+    }
+    if (placementObject.keyValues) {
+      for (var key in placementObject.keyValues) {
+        for (var valueCounter = 0; valueCounter < placementObject.keyValues[key].length; valueCounter++) {
+          impressionObject.kvw = impressionObject.kvw || {};
+          impressionObject.kvw[key] = impressionObject.kvw[key] || [];
+          impressionObject.kvw[key].push(placementObject.keyValues[key][valueCounter]);
+        }
+      }
+    }
+    if (placementObject.size && placementObject.size.w && placementObject.size.h) {
+      impressionObject.banner = {};
+      impressionObject.banner.w = placementObject.size.w;
+      impressionObject.banner.h = placementObject.size.h;
+    } else {
+      impressionObject.banner = {};
+    }
+
+    if (!impressionObject.pid && !impressionObject.pubid && !impressionObject.pkey && !(impressionObject.banner && impressionObject.banner.w && impressionObject.banner.h)) {
+      outputObject.impressionObject = null;
+      outputObject.errorCode = this.CONSTANTS.ERROR_CODES.MISSING_PLACEMENT_PARAMS;
+    }
+    return outputObject;
+  };
+}
+
+exports.ImproveDigitalAdServerJSClient = ImproveDigitalAdServerJSClient;
+
