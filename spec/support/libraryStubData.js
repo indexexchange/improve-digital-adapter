@@ -126,7 +126,11 @@ var libraryStubData = {
             return (new Date()).getTime();
         }
     },
-    'utilities.js': {},
+    'utilities.js': {
+        isArray: function(object) {
+            return Object.prototype.toString.call(object) === '[object Array]';
+        }
+    },
     'whoopsie.js': function () {
         return null;
     },
