@@ -19,6 +19,34 @@
 
 var Inspector = require('../../../libs/external/schema-inspector.js');
 
+var custom = {
+    impliesPresence: function (schema, candidate) {
+        var implication = schema.$impliesPresence;
+        var impliedIf = implication.if;
+        var impliedThen = implication.then;
+        if (candidate[impliedIf] && typeof candidate[impliedThen] === 'undefined') {
+            this.report('if ' + impliedIf + 'exists then ' + impliedThen + ' must also exist');
+        }
+    }
+};
+Inspector.Validation.extend(custom);
+
+custom = {
+    mustIncludeOneOnly: function (schema, candidate) {
+        var mustIncludeOneOnly = schema.$mustIncludeOneOnly.params;
+        var occurrenceCounter = 0;
+        for (var index = 0; index < mustIncludeOneOnly.length; index++) {
+            if (candidate[mustIncludeOneOnly[index]]) {
+                occurrenceCounter++;
+            }
+        }
+        if (occurrenceCounter != 1) {
+            this.report('One and only one of the following must be present: ' + JSON.stringify(mustIncludeOneOnly));
+        }
+    }
+};
+Inspector.Validation.extend(custom);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Main ////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -42,10 +70,55 @@ var partnerValidator = function (configs) {
                 properties: {
                     '*': {
                         type: 'object',
+                        someKeys: ['placementId', 'placementKey'],
+                        $impliesPresence : {
+                            if: "placementKey",
+                            then: "publisherId"
+                        },
+                        $mustIncludeOneOnly : {
+                            params: ["placementId", "placementKey"]
+                        },
                         properties: {
-                            placementId: {
+                            currency: {
                                 type: 'string',
-                                minLength: 1
+                                optional: true,
+                                pattern: /^USD|EUR|GBP|AUD|DKK|SEK|CZK|CHF|NOK$/
+                            },
+                            placementId: {
+                                type: 'number',
+                                optional: true
+                            },
+                            size:{
+                                type: 'object',
+                                optional: true,
+                                properties: {
+                                    w: {
+                                        type: 'number'
+                                    },
+                                    h: {
+                                        type: 'number'
+                                    }
+                                }
+                            },
+                            publisherId: {
+                                type: 'number',
+                                minLength: 1,
+                                optional: true
+                            },
+                            placementKey: {
+                                type: 'string',
+                                minLength: 1,
+                                optional: true
+                            },
+                            keyValues: {
+                                type: 'object',
+                                optional: true,
+                                properties:{
+                                    '*': {
+                                        type: 'array',
+                                        items: { type: 'string'}
+                                    }
+                                }
                             }
                         }
                     }
