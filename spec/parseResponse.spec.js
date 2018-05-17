@@ -118,7 +118,7 @@ describe('parseResponse', function () {
 
         afterAll(function () {
             expectSpy.restore();
-            chai.expect(expectSpy.callCount).to.equal(66);
+            chai.expect(expectSpy.callCount).to.equal(89);
         });
 
         afterEach(function () {
