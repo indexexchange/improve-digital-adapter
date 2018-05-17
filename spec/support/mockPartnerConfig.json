@@ -1,27 +1,95 @@
 {
     "timeout": 1000,
     "xSlots": {
-        "1": {
-            "placementId": "54321",
-            "sizes": [
-                [300, 250]
-            ]
+        "xSlot1": {
+            "placementId": 1053688
         },
-        "2": {
-            "placementId": "12345",
-            "sizes": [
-                [300, 600]
-            ]
+        "xSlot2": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_smoke_test"
         },
-        "3": {
-            "placementId": "654321",
-            "sizes": [
-                [728, 90]
-            ]
+        "xSlot3": {
+            "placementId": 1053687,
+            "size":{
+                "h": 290,
+                "w": 600
+            }
+        },
+        "xSlot4": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_size_filter_test",
+            "size":{
+                "h": 600,
+                "w": 800
+            }
+        },
+        "xSlot5": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_key_value_test",
+            "keyValues":{
+                "hbkv": ["01"]
+            }
+        },
+        "xSlot6": {
+            "placementId": 1053689,
+            "keyValues":{
+                "testKey": ["testValue"]
+            }
+        },
+        "xSlot7": {
+            "placementId": 1053688,
+            "currency": "USD"
+        },
+        "xSlot8": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_smoke_test",
+            "currency": "AUD"
+        },
+        "xSlot9": {
+            "placementId": 1053687,
+            "size":{
+                "h": 290,
+                "w": 600
+            },
+            "currency": "DKK"
+        },
+        "xSlot10": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_size_filter_test",
+            "size":{
+                "h": 600,
+                "w": 800
+            },
+            "currency": "CZK"
+        },
+        "xSlot11": {
+            "publisherId": 1032,
+            "placementKey": "data_team_test_hb_key_value_test",
+            "keyValues":{
+                "hbkv": ["01"]
+            },
+            "currency": "GBP"
+        },
+        "xSlot12": {
+            "placementId": 1053689,
+            "keyValues":{
+                "testKey": ["testValue"]
+            },
+            "currency": "CHF"
         }
     },
     "mapping": {
-        "htSlot1": ["1", "2"],
-        "htSlot2": ["3"]
+        "htSlot1": ["xSlot1"],
+        "htSlot2": ["xSlot2"],
+        "htSlot3": ["xSlot3"],
+        "htSlot4": ["xSlot4"],
+        "htSlot5": ["xSlot5"],
+        "htSlot6": ["xSlot6"],
+        "htSlot7": ["xSlot7"],
+        "htSlot8": ["xSlot8"],
+        "htSlot9": ["xSlot9"],
+        "htSlot10": ["xSlot10"],
+        "htSlot11": ["xSlot11"],
+        "htSlot12": ["xSlot12"]
     }
 }
