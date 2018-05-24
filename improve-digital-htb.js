@@ -272,7 +272,11 @@ function ImproveDigitalHtb(configs) {
                     curBid = adResponse.bid[0];
                 }
             } else {
-                continue;
+              if (__profile.enabledAnalytics.requestTime) {
+                __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
+              }
+              curReturnParcel.pass = true;
+              continue;
             }
             
             /* ---------- Fill the bid variables with data from the bid response here. ------------*/
