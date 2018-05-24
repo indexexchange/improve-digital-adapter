@@ -267,10 +267,8 @@ function ImproveDigitalHtb(configs) {
 
             var curBid = null;
       
-            if (curReturnParcel.requestId === adResponse.id) {
-                if(adResponse.bid && adResponse.bid.length) {
-                    curBid = adResponse.bid[0];
-                }
+            if (adResponse && adResponse.bid && adResponse.bid[0]) {
+              curBid = adResponse.bid[0];
             } else {
               if (__profile.enabledAnalytics.requestTime) {
                 __baseClass._emitStatsEvent(sessionId, 'hs_slot_pass', headerStatsInfo);
@@ -323,7 +321,7 @@ function ImproveDigitalHtb(configs) {
                     nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
                 }
                 bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
-                bidDealId = curBid.pid;
+                bidDealId = curBid.pid.toString();
             } else {
                 bidIsPass = true;
             }
