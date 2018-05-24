@@ -130,7 +130,7 @@ describe('parseResponse', function () {
                 var expectedResults = responseData.results[counter];
                 var requestId = expectedResults.requestId;
                 it("Check response for slot " + requestId, function() {
-                    partnerModule.parseResponse(1, mockData[counter], returnParcels);
+                    partnerModule.parseResponse(1, mockData[counter], [returnParcels[counter]]);
                     if (expectedResults.pass === false) {
                         chai.expect(registerAd.callCount).to.equal(1);
                         var registerAdArgs = registerAd.getCalls()[0].args;
