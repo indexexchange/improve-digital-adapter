@@ -436,7 +436,7 @@ function ImproveDigitalHtb(configs) {
             },
       bidUnitInCents: 1,
             lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
-            callbackType: Partner.CallbackTypes.CALLBACK_NAME, // Callback type, please refer to the readme for details
+            callbackType: Partner.CallbackTypes.ID, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
             requestType: Partner.RequestTypes.JSONP // Use only JSONP for bid requests
         };

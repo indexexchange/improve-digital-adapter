@@ -6,94 +6,10 @@
         },
         "xSlot2": {
             "placementId": 1159201
-        },
-        "xSlot3": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_smoke_test"
-        },
-        "xSlot4": {
-            "placementId": 1053687,
-            "size":{
-                "h": 290,
-                "w": 600
-            }
-        },
-        "xSlot5": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_size_filter_test",
-            "size":{
-                "h": 600,
-                "w": 800
-            }
-        },
-        "xSlot6": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_key_value_test",
-            "keyValues":{
-                "hbkv": ["01"]
-            }
-        },
-        "xSlot7": {
-            "placementId": 1053689,
-            "keyValues":{
-                "testKey": ["testValue"]
-            }
-        },
-        "xSlot8": {
-            "placementId": 1053688,
-            "currency": "USD"
-        },
-        "xSlot9": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_smoke_test",
-            "currency": "AUD"
-        },
-        "xSlot10": {
-            "placementId": 1053687,
-            "size":{
-                "h": 290,
-                "w": 600
-            },
-            "currency": "DKK"
-        },
-        "xSlot11": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_size_filter_test",
-            "size":{
-                "h": 600,
-                "w": 800
-            },
-            "currency": "CZK"
-        },
-        "xSlot12": {
-            "publisherId": 1032,
-            "placementKey": "data_team_test_hb_key_value_test",
-            "keyValues":{
-                "hbkv": ["01"]
-            },
-            "currency": "GBP"
-        },
-        "xSlot13": {
-            "placementId": 1053689,
-            "keyValues":{
-                "testKey": ["testValue"]
-            },
-            "currency": "CHF"
         }
     },
     "mapping": {
         "728x90_970x250": ["xSlot1"],
-        "300x250": ["xSlot2"],
-        "htSlot3": ["xSlot3"],
-        "htSlot4": ["xSlot4"],
-        "htSlot5": ["xSlot5"],
-        "htSlot6": ["xSlot6"],
-        "htSlot7": ["xSlot7"],
-        "htSlot8": ["xSlot8"],
-        "htSlot9": ["xSlot9"],
-        "htSlot10": ["xSlot10"],
-        "htSlot11": ["xSlot11"],
-        "htSlot12": ["xSlot12"],
-        "htSlot13": ["xSlot13"]
+        "300x250": ["xSlot2"]
     }
 }

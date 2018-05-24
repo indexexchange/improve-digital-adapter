@@ -85,7 +85,7 @@ describe('parseResponse', function () {
     var proxyquire = require('proxyquire').noCallThru();
     var libraryStubData = require('./support/libraryStubData.js');
     var partnerModule = proxyquire('../improve-digital-htb.js', libraryStubData);
-    var partnerConfig = require('./support/mockPartnerConfig.json');
+    var partnerConfig = require('./support/unitTestPartnerConfig.json');
     var fs = require('fs');
     var parseJson = require('parse-json');
     var path = require('path');
