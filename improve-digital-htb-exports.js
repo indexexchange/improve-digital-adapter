@@ -10,4 +10,9 @@
 shellInterface.ImproveDigitalHtb = {
     render: SpaceCamp.services.RenderService.renderDfpAd.bind(null, 'ImproveDigitalHtb')
 };
+
+if (__directInterface.Layers.PartnersLayer.Partners.ImproveDigitalHtb) {
+    shellInterface.ImproveDigitalHtb = shellInterface.ImproveDigitalHtb || {};
+    shellInterface.ImproveDigitalHtb.adResponseCallback = __directInterface.Layers.PartnersLayer.Partners.ImproveDigitalHtb.adResponseCallback;
+}
 //? }

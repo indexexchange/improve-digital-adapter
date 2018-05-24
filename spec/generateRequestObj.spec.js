@@ -102,7 +102,7 @@ describe('generateRequestObj', function () {
     var proxyquire = require('proxyquire').noCallThru();
     var libraryStubData = require('./support/libraryStubData.js');
     var partnerModule = proxyquire('../improve-digital-htb.js', libraryStubData);
-    var partnerConfig = require('./support/mockPartnerConfig.json');
+    var partnerConfig = require('./support/unitTestPartnerConfig.json');
     var expect = require('chai').expect;
     /* -------------------------------------------------------------------- */
 
