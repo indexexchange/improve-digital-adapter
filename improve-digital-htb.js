@@ -24,6 +24,7 @@ var SpaceCamp = require('space-camp.js');
 var System = require('system.js');
 var Network = require('network.js');
 var Utilities = require('utilities.js');
+var ComplianceService;
 var EventsService;
 var RenderService;
 
@@ -159,7 +160,14 @@ function ImproveDigitalHtb(configs) {
                 callback: 'window.' + SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
             };
             requestParameters.singleRequestMode = false;
-
+/*
+            if (ComplianceService.isPrivacyEnabled()) {
+              var gdpr = ComplianceService.gdpr.getConsent();
+              if (gdpr && gdpr.applies && gdpr.consentString && gdpr.consentString.length > 0) {
+                requestParameters.gdpr = gdpr.consentString;
+              }
+            }
+*/
             var protocol = Browser.getProtocol();
             requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
             var requestObject = [];
@@ -289,7 +297,7 @@ function ImproveDigitalHtb(configs) {
                 bidPrice = 0;
                 bidIsPass = true;
             } else {
-                bidPrice = curBid.price * 100;
+                bidPrice = curBid.price;
                 bidIsPass = false;
             }
 
@@ -400,6 +408,7 @@ function ImproveDigitalHtb(configs) {
      * ---------------------------------- */
 
     (function __constructor() {
+        ComplianceService = SpaceCamp.services.ComplianceService;
         EventsService = SpaceCamp.services.EventsService;
         RenderService = SpaceCamp.services.RenderService;
 
@@ -436,7 +445,7 @@ function ImproveDigitalHtb(configs) {
                 pm: 'ix_imdi_cpm',
                 pmid: 'ix_imdi_dealid'
             },
-      bidUnitInCents: 1,
+      bidUnitInCents: 100,
             lineItemType: Constants.LineItemTypes.ID_AND_PRICE,
             callbackType: Partner.CallbackTypes.ID, // Callback type, please refer to the readme for details
             architecture: Partner.Architectures.MRA, // Multi-request Architecture
@@ -512,7 +521,7 @@ function ImproveDigitalAdServerJSClient(endPoint) {
     AD_SERVER_BASE_URL: 'ad.360yield.com',
     END_POINT: endPoint || 'hb',
     AD_SERVER_URL_PARAM: 'jsonp=',
-    CLIENT_VERSION: 'JS-5.0.0',
+    CLIENT_VERSION: 'JS-5.1.1',
     MAX_URL_LENGTH: 2083,
     ERROR_CODES: {
       MISSING_PLACEMENT_PARAMS: 2,
@@ -660,6 +669,9 @@ function ImproveDigitalAdServerJSClient(endPoint) {
     }
     if (requestParameters.referrer) {
       impressionBidRequestObject.referrer = requestParameters.referrer;
+    }
+    if (requestParameters.gdpr || requestParameters.gdpr === 0) {
+      impressionBidRequestObject.gdpr = requestParameters.gdpr;
     }
     if (extraRequestParameters) {
       for (var prop in extraRequestParameters) {
