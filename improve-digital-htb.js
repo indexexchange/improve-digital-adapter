@@ -160,14 +160,14 @@ function ImproveDigitalHtb(configs) {
                 callback: 'window.' + SpaceCamp.NAMESPACE + '.' + __profile.namespace + '.adResponseCallback'
             };
             requestParameters.singleRequestMode = false;
-/*
+
             if (ComplianceService.isPrivacyEnabled()) {
               var gdpr = ComplianceService.gdpr.getConsent();
-              if (gdpr && gdpr.applies && gdpr.consentString && gdpr.consentString.length > 0) {
+              if (gdpr && gdpr.applies && (gdpr.consentString || gdpr.consentString.length === 0)) {
                 requestParameters.gdpr = gdpr.consentString;
               }
             }
-*/
+
             var protocol = Browser.getProtocol();
             requestParameters.secure = protocol === "https" ? __adServerClient.CONSTANTS.SECURE : __adServerClient.CONSTANTS.STANDARD;
             var requestObject = [];
