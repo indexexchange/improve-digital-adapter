@@ -510,8 +510,6 @@ function ImproveDigitalHtb(configs) {
 
 module.exports = ImproveDigitalHtb;
 
-'use strict';
-
 function ImproveDigitalAdServerJSClient(endPoint) {
   this.CONSTANTS = {
     HTTP_SECURITY: {
