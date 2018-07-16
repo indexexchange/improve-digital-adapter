@@ -169,7 +169,7 @@ function ImproveDigitalHtb(configs) {
             }
 
             var protocol = Browser.getProtocol();
-            requestParameters.secure = protocol === "https:" ? __adServerClient.HTTP_SECURITY.CONSTANTS.SECURE : __adServerClient.CONSTANTS.HTTP_SECURITY.STANDARD;
+            requestParameters.secure = protocol === "https:" ? __adServerClient.CONSTANTS.HTTP_SECURITY.SECURE : __adServerClient.CONSTANTS.HTTP_SECURITY.STANDARD;
             var requestObject = [];
             for (var parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
                 var parcel = returnParcels[parcelCounter];
