@@ -311,7 +311,7 @@ function ImproveDigitalHtb(configs) {
             var pixelUrl = '';
       
             var bidCreative = '';
-            var bidDealId;
+            var bidDealId = null;
             if (curBid.adm) {
                 var syncString = "";
                 var syncArray = (curBid.sync && curBid.sync.length > 0)? curBid.sync : [];
