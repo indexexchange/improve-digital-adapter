@@ -171,11 +171,25 @@ function ImproveDigitalHtb(configs) {
             var protocol = Browser.getProtocol();
             requestParameters.secure = protocol === "https:" ? __adServerClient.CONSTANTS.HTTP_SECURITY.SECURE : __adServerClient.CONSTANTS.HTTP_SECURITY.STANDARD;
             var requestObject = [];
+            var globalDynamicKeyValues = null;
+            if (configs.globalDynamicKeyValues) {
+                globalDynamicKeyValues = __evalDynamicKeyValues(configs.globalDynamicKeyValues);
+            }
             for (var parcelCounter = 0; parcelCounter < returnParcels.length; parcelCounter++) {
                 var parcel = returnParcels[parcelCounter];
                 if (parcel) {
                     // The client needs an adUnitId.  The htSlot Id is guaranteed to be unique for the page
                     var xSlotCopy = JSON.parse(JSON.stringify(parcel.xSlotRef));
+                    if (globalDynamicKeyValues) {
+                        xSlotCopy.keyValues = xSlotCopy.keyValues || {};
+                        Utilities.mergeObjects(xSlotCopy.keyValues, globalDynamicKeyValues);
+                    }
+                    if (xSlotCopy.dynamicKeyValues) {
+                        xSlotCopy.keyValues = xSlotCopy.keyValues || {};
+                        var dynamicKeyValues = __evalDynamicKeyValues(xSlotCopy.dynamicKeyValues);
+                        Utilities.mergeObjects(xSlotCopy.keyValues, dynamicKeyValues);
+                        delete xSlotCopy.dynamicKeyValues;
+                    }
                     xSlotCopy.adUnitId = parcel.htSlot.getId();
                     xSlotCopy.id = parcel.requestId;
                     requestObject.push(xSlotCopy);
@@ -424,7 +438,7 @@ function ImproveDigitalHtb(configs) {
             partnerId: 'ImproveDigitalHtb', // PartnerName
             namespace: 'ImproveDigitalHtb', // Should be same as partnerName
             statsId: 'IMDI', // Unique partner identifier
-            version: '2.1.1',
+            version: '2.2.0',
             targetingType: 'slot',
             enabledAnalytics: {
                 requestTime: true
@@ -509,6 +523,42 @@ function ImproveDigitalHtb(configs) {
 ////////////////////////////////////////////////////////////////////////////////
 
 module.exports = ImproveDigitalHtb;
+
+function __evalFunction(functionString, args) {
+    try {
+        return eval.call(null, functionString + '(' + args.join() + ')');
+    } catch (ex) {
+        //? if (DEBUG) {
+        Scribe.error('Error evaluating function ' + functionString + ': ' + ex);
+        //? }
+    }
+    return null;
+}
+
+function __evalDynamicKeyValues(kvObj) {
+  var returnObj = {};
+
+    for (var key in kvObj) {
+        if (!kvObj.hasOwnProperty(key)) {
+            continue;
+        }
+
+        returnObj[key] = returnObj[key] || [];
+
+        var evaledValue = __evalFunction(kvObj[key].fn, kvObj[key].args);
+
+        if (evaledValue !== null && evaledValue !== undefined) {
+            if (Utilities.isArray(evaledValue)) {
+                for (var k = 0; k < evaledValue.length; k++) {
+                    returnObj[key].push(evaledValue[k]);
+                }
+            } else {
+                returnObj[key].push(evaledValue);
+            }
+        }
+    }
+    return returnObj;
+}
 
 function ImproveDigitalAdServerJSClient(endPoint) {
   this.CONSTANTS = {

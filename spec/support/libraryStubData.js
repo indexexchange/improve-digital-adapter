@@ -142,7 +142,10 @@ var libraryStubData = {
     'utilities.js': {
         isArray: function(object) {
             return Object.prototype.toString.call(object) === '[object Array]';
-        }
+        },
+        mergeObjects: function(obj1, obj2) {
+            return Object.assign(obj1, obj2);
+        },
     },
     'whoopsie.js': function () {
         return null;

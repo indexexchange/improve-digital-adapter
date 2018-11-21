@@ -119,6 +119,52 @@ var partnerValidator = function (configs) {
                                         items: { type: 'string'}
                                     }
                                 }
+                            },
+                            dynamicKeyValues: {
+                                type: 'object',
+                                optional: true,
+                                properties: {
+                                    '*': {
+                                        type: 'object',
+                                        strict: true,
+                                        properties: {
+                                            fn: {
+                                                type: 'string',
+                                                minLength: 1
+                                            },
+                                            args: {
+                                                type: 'array',
+                                                items: {
+                                                    type: 'string',
+                                                    minLength: 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        globalDynamicKeyValues: {
+            type: 'object',
+            optional: true,
+            properties: {
+                '*': {
+                    type: 'object',
+                    strict: true,
+                    properties: {
+                        fn: {
+                            type: 'string',
+                            minLength: 1
+                        },
+                        args: {
+                            type: 'array',
+                            items: {
+                                type: 'string',
+                                minLength: 1
                             }
                         }
                     }
