@@ -350,7 +350,7 @@ function ImproveDigitalHtb(configs) {
                     Utilities.isArray(curBid.buying_type) &&
                     curBid.lid.length === curBid.buying_type.length) {
                     var isDeal = false;
-                    curBid.buying_type.forEach((bt, i) => {
+                    curBid.buying_type.forEach(function(bt, i) {
                         if (isDeal) return;
                         if (bt === 'deal_id') {
                             isDeal = true;
