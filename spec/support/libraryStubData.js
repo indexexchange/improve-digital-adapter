@@ -112,7 +112,20 @@ var libraryStubData = {
                 registerAd: function () {
                     return '_' + Math.random().toString(36).substr(2, 9);
                 }
-            }
+            },
+            ComplianceService: {
+                gdpr: {
+                    getConsent: function (){
+                        return {
+                            applies: true,
+                            consentString: "BOQ7WlgOQ7WlgABABwAAABJOACgACAAQABA"
+                        }
+                    },
+                },
+                isPrivacyEnabled: function(){
+                        return true;
+                }                
+            },
         },
     },
     'system.js': {
@@ -129,7 +142,13 @@ var libraryStubData = {
     'utilities.js': {
         isArray: function(object) {
             return Object.prototype.toString.call(object) === '[object Array]';
-        }
+        },
+        isNumber: function(x) {
+            return typeof x === 'number';
+        },
+        mergeObjects: function(obj1, obj2) {
+            return Object.assign(obj1, obj2);
+        },
     },
     'whoopsie.js': function () {
         return null;

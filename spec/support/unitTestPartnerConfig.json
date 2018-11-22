@@ -79,6 +79,29 @@
                 "testKey": ["testValue"]
             },
             "currency": "CHF"
+        },
+        "xSlot14": {
+            "placementId": 1053689,
+            "keyValues":{
+                "testKey": ["testValue"]
+            },
+            "dynamicKeyValues":{
+                "key1": {
+                    "fn": "(function(a){return a+3})",
+                    "args": [2]
+                },
+                "key2": {
+                    "fn": "(function(){return ['x','y']})",
+                    "args": []
+                }
+            },
+            "currency": "CHF"
+        }
+    },
+    "globalDynamicKeyValues": {
+        "globalKey1": {
+            "fn": "(function(a){var blah=[a];return blah})",
+            "args": ["'globalValue'"]
         }
     },
     "mapping": {
@@ -94,6 +117,7 @@
         "htSlot10": ["xSlot10"],
         "htSlot11": ["xSlot11"],
         "htSlot12": ["xSlot12"],
-        "htSlot13": ["xSlot13"]
+        "htSlot13": ["xSlot13"],
+        "htSlot14": ["xSlot14"]
     }
 }

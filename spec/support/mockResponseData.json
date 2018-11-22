@@ -12,6 +12,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": 291234,
+          "buying_type": "rtb",
           "pid": 1159200,
           "sync": [
             "http://link1",
@@ -37,6 +39,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": 291235,
+          "buying_type": "deal_id",
           "pid": 1159201,
           "sync": [
             "http://link1",
@@ -61,6 +65,8 @@
           "advid": "5279",
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291236 ],
+          "buying_type": ["classic", "deal_id"],
           "pid": 1053688,
           "sync": [
             "http://link1",
@@ -86,6 +92,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291237, 291238 ],
+          "buying_type": ["classic", "rtb"],
           "pid": 1053688,
           "sync": [
             "http://link1",
@@ -111,6 +119,8 @@
           "advid": "5279",
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291239, 291240 ],
+          "buying_type": ["classic", "deal_id"],
           "pid": 1053688,
           "crid": "422031",
           "w": 600,
@@ -129,11 +139,8 @@
       "size":[600,290],
       "targetingType":"slot",
       "targeting":{
-        "ix_imdi_dealid":[
-          "600x290_1159200"
-        ],
         "ix_imdi_cpm":[
-          "600x290_145.888594164456"
+          "600x290_1.45888594164456"
         ],
         "ix_imdi_id":[
           "_2222222222"
@@ -141,7 +148,7 @@
         "pubKitAdId":"_blg8ol53j"
       },
       "adm":"<img src=\"http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp\" width=\"0\" height=\"0\" style=\"display:none\"><script>document.writeln(\"<a href=\\\"http:\\/\\/ad.360yield.com\\/click\\/wVmhKEKFeJufyP3hFfp7fv95ynoKe7vnG9V-j8EyAzklSoKRkownAclw4Zzcw-OcbJMg2KfjNiO8GoO9WP1jbNM8Q5GtmClbG9hZPBS4v6oBBiDi50AjRqHQsDAoBOJrIJtVyCfrnAIxvbysozCpLt20ov6jz2JPi6fe.D55HNeDLDyiLNgxVPa3y9jJZf65JBirCjOoZ-1Mj1BLB.57VdMaEhpGjjl5HnPgw0Pv7Hm1BO7PB9nCXJ9IwOH3IrKo.Wyy1iKDk6zeGwGOkQHSOMuQnCHyD35x6bhDQrpl5H6fTRTR8D2m5.-Zjh3fs8SKlo0i25EjKPw65iF.tvgcnq01U08OIh86EeSciamJgV0hNsk20TcTubfsoPN4are4nQ0y2gB-lz9tf3AjqHpSz5NoJWrpWtnrBHbjm.dS1XUQB1tzcLpIkA34nDe2eNxRZbZkZNSSs.Y8jQemfbjuLpttcemHqidFZo3xp37eSfUImw.HbyFdnK-wxFDYudgsIDxGJWI=\\/\\/http%3A%2F%2Fwww.improvedigital.com\\\" target=\\\"_blank\\\"><img style=\\\"border: 0;\\\" border=\\\"0\\\" width=\\\"600\\\" height=\\\"290\\\" src=\\\"http:\\/\\/creative.360yield.com\\/file\\/221728\\/ImproveDigital600x290.jpg\\\" alt=\\\"\\\"\\/><\\/a>\");document.writeln(\"<improvedigital_ad_output_information tp_id=\\\"\\\" buyer_id=\\\"0\\\" rtb_advertiser=\\\"\\\" campaign_id=\\\"99006\\\" line_item_id=\\\"268515\\\" creative_id=\\\"422031\\\" crid=\\\"0\\\" placement_id=\\\"1053688\\\"><\\/improvedigital_ad_output_information>\");document.writeln(\"<img src=\\\"http:\\/\\/link1\\\"/><img src=\\\"http:\\/\\/link2\\\"/>\")</script>",
-      "price":145.888594164456,
+      "price":1.45888594164456,
       "pass": false
     },
     {
@@ -152,10 +159,10 @@
       "targetingType":"slot",
       "targeting":{
         "ix_imdi_dealid":[
-          "600x290_1159201"
+          "600x290_291235"
         ],
         "ix_imdi_cpm":[
-          "600x290_145.888594164456"
+          "600x290_1.45888594164456"
         ],
         "ix_imdi_id":[
           "_2222222223"
@@ -163,7 +170,7 @@
         "pubKitAdId":"_blg8ol53j"
       },
       "adm":"<img src=\"http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp\" width=\"0\" height=\"0\" style=\"display:none\"><script>document.writeln(\"<a href=\\\"http:\\/\\/ad.360yield.com\\/click\\/wVmhKEKFeJufyP3hFfp7fv95ynoKe7vnG9V-j8EyAzklSoKRkownAclw4Zzcw-OcbJMg2KfjNiO8GoO9WP1jbNM8Q5GtmClbG9hZPBS4v6oBBiDi50AjRqHQsDAoBOJrIJtVyCfrnAIxvbysozCpLt20ov6jz2JPi6fe.D55HNeDLDyiLNgxVPa3y9jJZf65JBirCjOoZ-1Mj1BLB.57VdMaEhpGjjl5HnPgw0Pv7Hm1BO7PB9nCXJ9IwOH3IrKo.Wyy1iKDk6zeGwGOkQHSOMuQnCHyD35x6bhDQrpl5H6fTRTR8D2m5.-Zjh3fs8SKlo0i25EjKPw65iF.tvgcnq01U08OIh86EeSciamJgV0hNsk20TcTubfsoPN4are4nQ0y2gB-lz9tf3AjqHpSz5NoJWrpWtnrBHbjm.dS1XUQB1tzcLpIkA34nDe2eNxRZbZkZNSSs.Y8jQemfbjuLpttcemHqidFZo3xp37eSfUImw.HbyFdnK-wxFDYudgsIDxGJWI=\\/\\/http%3A%2F%2Fwww.improvedigital.com\\\" target=\\\"_blank\\\"><img style=\\\"border: 0;\\\" border=\\\"0\\\" width=\\\"600\\\" height=\\\"290\\\" src=\\\"http:\\/\\/creative.360yield.com\\/file\\/221728\\/ImproveDigital600x290.jpg\\\" alt=\\\"\\\"\\/><\\/a>\");document.writeln(\"<improvedigital_ad_output_information tp_id=\\\"\\\" buyer_id=\\\"0\\\" rtb_advertiser=\\\"\\\" campaign_id=\\\"99006\\\" line_item_id=\\\"268515\\\" creative_id=\\\"422031\\\" crid=\\\"0\\\" placement_id=\\\"1053688\\\"><\\/improvedigital_ad_output_information>\");document.writeln(\"<img src=\\\"http:\\/\\/link1\\\"/><img src=\\\"http:\\/\\/link2\\\"/>\")</script>",
-      "price":145.888594164456,
+      "price":1.45888594164456,
       "pass": false
     },
     {
@@ -191,10 +198,10 @@
       "targetingType":"slot",
       "targeting": {
         "ix_imdi_dealid": [
-          "600x290_1053688"
+          "600x290_291240"
         ],
         "ix_imdi_cpm": [
-          "600x290_120.000111111"
+          "600x290_1.20000111111"
         ],
         "ix_imdi_id": [
           "_2222222227"
