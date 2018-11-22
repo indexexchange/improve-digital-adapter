@@ -143,6 +143,9 @@ var libraryStubData = {
         isArray: function(object) {
             return Object.prototype.toString.call(object) === '[object Array]';
         },
+        isNumber: function(x) {
+            return typeof x === 'number';
+        },
         mergeObjects: function(obj1, obj2) {
             return Object.assign(obj1, obj2);
         },

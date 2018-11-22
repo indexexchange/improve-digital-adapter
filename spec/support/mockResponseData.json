@@ -12,6 +12,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": 291234,
+          "buying_type": "rtb",
           "pid": 1159200,
           "sync": [
             "http://link1",
@@ -37,6 +39,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": 291235,
+          "buying_type": "deal_id",
           "pid": 1159201,
           "sync": [
             "http://link1",
@@ -61,6 +65,8 @@
           "advid": "5279",
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291236 ],
+          "buying_type": ["classic", "deal_id"],
           "pid": 1053688,
           "sync": [
             "http://link1",
@@ -86,6 +92,8 @@
           "price": 1.45888594164456,
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291237, 291238 ],
+          "buying_type": ["classic", "rtb"],
           "pid": 1053688,
           "sync": [
             "http://link1",
@@ -111,6 +119,8 @@
           "advid": "5279",
           "nurl": "http://ad.360yield.com/imp_pixel?ic=wVmhKI07hCVyGC1sNdFp",
           "h": 290,
+          "lid": [ 291239, 291240 ],
+          "buying_type": ["classic", "deal_id"],
           "pid": 1053688,
           "crid": "422031",
           "w": 600,
@@ -129,9 +139,6 @@
       "size":[600,290],
       "targetingType":"slot",
       "targeting":{
-        "ix_imdi_dealid":[
-          "600x290_1159200"
-        ],
         "ix_imdi_cpm":[
           "600x290_1.45888594164456"
         ],
@@ -152,7 +159,7 @@
       "targetingType":"slot",
       "targeting":{
         "ix_imdi_dealid":[
-          "600x290_1159201"
+          "600x290_291235"
         ],
         "ix_imdi_cpm":[
           "600x290_1.45888594164456"
@@ -191,7 +198,7 @@
       "targetingType":"slot",
       "targeting": {
         "ix_imdi_dealid": [
-          "600x290_1053688"
+          "600x290_291240"
         ],
         "ix_imdi_cpm": [
           "600x290_1.20000111111"

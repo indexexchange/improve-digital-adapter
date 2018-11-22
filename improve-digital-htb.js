@@ -343,7 +343,21 @@ function ImproveDigitalHtb(configs) {
                     nurl = "<img src=\"" + curBid.nurl + "\" width=\"0\" height=\"0\" style=\"display:none\">";
                 }
                 bidCreative = nurl + "<script>" + curBid.adm + syncString + "</script>";
-                bidDealId = curBid.pid.toString();
+
+                if (Utilities.isNumber(curBid.lid) && curBid.buying_type === 'deal_id') {
+                    bidDealId = curBid.lid.toString();
+                } else if (Utilities.isArray(curBid.lid) &&
+                    Utilities.isArray(curBid.buying_type) &&
+                    curBid.lid.length === curBid.buying_type.length) {
+                    var isDeal = false;
+                    curBid.buying_type.forEach((bt, i) => {
+                        if (isDeal) return;
+                        if (bt === 'deal_id') {
+                            isDeal = true;
+                            bidDealId = curBid.lid[i].toString();
+                        }
+                    });
+                }
             } else {
                 bidIsPass = true;
             }
